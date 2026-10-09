@@ -157,7 +157,9 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 .controls { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 10px; }
 .controls button { justify-content: center; padding: 16px 10px; font-size: 1rem; }
 .controls .big { font: 600 1.2rem/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
-.toggles { display: flex; gap: 6px; }
+.toggles { display: flex; gap: 2px; flex-shrink: 0; }
+#player .ptop button { white-space: nowrap; padding: 8px; font-size: .85rem; }
+#tMusic { font-size: 1.05rem !important; }
 .toggles button[aria-pressed="false"] { opacity: .5; text-decoration: line-through; }
 .finished .clock { color: var(--k-walk); }
 
@@ -176,6 +178,64 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 @media (prefers-reduced-motion: no-preference) {
   .ring > div { transition: width .25s linear; }
 }
+
+/* tabs */
+.tabs { display: flex; gap: 2px; background: var(--surface-2); padding: 3px; border-radius: 9px; width: max-content; }
+.tabs button { border: 0; background: transparent; padding: 7px 16px; font-size: .85rem; font-weight: 600; color: var(--muted); border-radius: 7px; }
+.tabs button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
+.tabs.small button { padding: 6px 12px; font-size: .8rem; }
+
+/* progress */
+.period { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.pnav { display: flex; align-items: center; gap: 2px; }
+.pnav span { font-weight: 600; font-size: .9rem; min-width: 9.5em; text-align: center; }
+.kpis { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px; align-items: end; }
+.kpi .v { font: 500 2rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.kpi.main .v { font-size: 3rem; }
+.kpi .l { font-size: .78rem; color: var(--muted); margin-top: 6px; }
+.chart { margin-top: 22px; }
+.chart .plot { position: relative; height: 130px; display: grid; gap: 2px; align-items: end; border-bottom: 1px solid var(--line); }
+.chart .grid-line { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--line); pointer-events: none; }
+.chart .grid-line span { position: absolute; right: 0; top: -16px; font-size: .7rem; color: var(--muted); background: var(--bg); padding-left: 4px; }
+.chart .col { height: 100%; display: flex; align-items: end; justify-content: center; cursor: pointer; border: 0; padding: 0; background: transparent; border-radius: 0; }
+.chart .col i { display: block; width: min(100%, 22px); background: var(--accent); border-radius: 4px 4px 0 0; min-height: 0; }
+.chart .col.zero i { height: 0 !important; }
+.chart .col.sel i, .chart .col:hover i { filter: brightness(1.15); }
+.chart .col:hover { background: transparent; }
+.chart .xl { display: grid; gap: 2px; margin-top: 6px; font-size: .7rem; color: var(--muted); text-align: center; }
+.chart .readout { font-size: .82rem; color: var(--muted); min-height: 1.4em; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.chart .readout b { color: var(--fg); }
+
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 18px 10px; }
+.badge { display: grid; justify-items: center; text-align: center; gap: 6px; }
+.medal { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; font: 700 1.05rem/1 var(--display); letter-spacing: .02em;
+  color: #fff; background: var(--mc, var(--accent)); box-shadow: inset 0 0 0 3px rgb(255 255 255 / .35), 0 0 0 2px var(--mc, var(--accent)); }
+.badge .n { font-size: .8rem; font-weight: 600; line-height: 1.2; }
+.badge .d { font-size: .72rem; color: var(--muted); line-height: 1.3; }
+.badge.locked .medal { background: var(--surface-2); color: var(--muted); box-shadow: inset 0 0 0 2px var(--line); }
+.badge.locked .n { color: var(--muted); }
+.bprog { width: 60px; height: 3px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+.bprog i { display: block; height: 100%; background: var(--muted); }
+
+.hist .wcard { padding-block: 12px; }
+.hist .when { font-size: .8rem; color: var(--muted); }
+.tag { font-size: .7rem; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+
+/* finish summary + new badges */
+.fin { display: grid; gap: 10px; justify-items: center; font-size: .9rem; color: var(--muted); }
+.fin .new { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.fin .new .badge { width: 92px; }
+
+/* music sheet */
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; background: var(--surface); border-top: 1px solid var(--line);
+  border-radius: 14px 14px 0 0; padding: 18px 16px calc(env(safe-area-inset-bottom, 0px) + 18px); display: grid; gap: 14px; max-width: 640px; margin: 0 auto;
+  box-shadow: 0 -8px 30px rgb(0 0 0 / .15); }
+.sheet .apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sheet .apps a { text-decoration: none; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 8px; text-align: center; font-weight: 600; font-size: .85rem; }
+.nowplaying { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.nowplaying .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }
+.mini { font-size: .78rem; color: var(--muted); }
+@media (max-width: 560px) { .kpi.main .v { font-size: 2.4rem; } .kpi .v { font-size: 1.6rem; } }
 </style>
 </head>
 <body>
@@ -185,6 +245,10 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
     <h1>Interval Keeper</h1>
     <button class="primary" id="newBtn">+ New</button>
   </header>
+  <nav class="tabs" id="tabs" aria-label="Sections">
+    <button data-tab="library" aria-pressed="true">Workouts</button>
+    <button data-tab="progress" aria-pressed="false">Progress</button>
+  </nav>
 
   <!-- LIBRARY -->
   <section id="library">
@@ -204,6 +268,34 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 
     </div>
     <div class="list" id="tplList"></div>
+  </section>
+
+  <!-- PROGRESS -->
+  <section id="progress" hidden>
+    <div class="period">
+      <div class="tabs small" id="periodTabs">
+        <button data-p="week" aria-pressed="true">Week</button>
+        <button data-p="month" aria-pressed="false">Month</button>
+        <button data-p="year" aria-pressed="false">Year</button>
+      </div>
+      <div class="pnav">
+        <button class="ghost" id="pvPrev" aria-label="Previous">‹</button>
+        <span id="pvLabel"></span>
+        <button class="ghost" id="pvNext" aria-label="Next">›</button>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi main"><div class="v mono" id="kTime">0m</div><div class="l">Time worked out</div></div>
+      <div class="kpi"><div class="v" id="kCount">0</div><div class="l">Workouts</div></div>
+      <div class="kpi"><div class="v" id="kStreak">0</div><div class="l">Day streak</div></div>
+    </div>
+    <div class="chart" id="chart"></div>
+
+    <div class="section-head" style="margin-top:40px"><h2>Badges</h2><span class="storage-note" id="badgeCount"></span></div>
+    <div class="badges" id="badgeGrid"></div>
+
+    <div class="section-head" style="margin-top:40px"><h2>History</h2></div>
+    <div class="list hist" id="histList"></div>
   </section>
 
   <!-- EDITOR -->
@@ -280,9 +372,10 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 <!-- PLAYER -->
 <div id="player" hidden>
   <div class="ptop">
-    <button class="ghost" id="pClose">✕ End</button>
+    <button class="ghost" id="pClose">End</button>
     <div class="pname" id="pName"></div>
     <div class="toggles">
+      <button class="ghost" id="tMusic" title="Music" aria-label="Music">♪</button>
       <button class="ghost" id="tBeep" aria-pressed="true" title="Beeps">Beep</button>
       <button class="ghost" id="tVoice" aria-pressed="true" title="Voice cues">Voice</button>
     </div>
@@ -293,6 +386,7 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
     <div class="clock" id="pClock">0:00</div>
     <div class="ring"><div id="pBar"></div></div>
     <div class="next" id="pNext"></div>
+    <div class="fin" id="pFin" hidden></div>
   </div>
   <div class="pfoot">
     <div class="lane tall" id="pLane"></div>
@@ -304,6 +398,25 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
     </div>
   </div>
 </div>
+
+<div class="sheet" id="musicSheet" hidden>
+  <div class="section-head" style="margin:0"><h2>Music</h2><button class="ghost" id="msClose">Done</button></div>
+  <div class="mini">Open your music app, start a playlist, then come back here. Beeps and voice cues play over it.</div>
+  <div class="apps">
+    <a href="music://" id="lnApple">Apple Music</a>
+    <a href="spotify://" id="lnSpotify">Spotify</a>
+    <a href="youtubemusic://" id="lnYT">YouTube Music</a>
+  </div>
+  <div class="mini">Or play songs saved in your Files app:</div>
+  <div class="nowplaying">
+    <label class="btn" for="mFiles" style="cursor:pointer">Choose songs</label>
+    <input type="file" id="mFiles" accept="audio/*" multiple hidden>
+    <button id="mPlay" disabled aria-label="Play or pause music">▶</button>
+    <button id="mNext" disabled aria-label="Next song">⏭</button>
+    <span class="t mini" id="mTitle">No songs chosen</span>
+  </div>
+</div>
+<audio id="mAudio" playsinline></audio>
 
 <div class="toast" id="toast" hidden></div>
 
@@ -433,10 +546,10 @@ function openEditor(w) {
   $("fParse").value = ""; $("parseErr").textContent = ""; $("edErr").textContent = "";
   $("pasteBox").open = false; $("extras").open = !!(draft.warmup || draft.cooldown || draft.notes);
   $("edDelete").hidden = !editingId; delete $("edDelete").dataset.confirm; $("edDelete").textContent = "Delete";
-  $("library").hidden = true; $("editor").hidden = false; $("newBtn").hidden = true;
+  $("library").hidden = true; $("progress").hidden = true; $("tabs").hidden = true; $("editor").hidden = false; $("newBtn").hidden = true;
   renderSteps(); window.scrollTo(0, 0);
 }
-function closeEditor() { $("editor").hidden = true; $("library").hidden = false; $("newBtn").hidden = false; window.scrollTo(0, 0); }
+function closeEditor() { $("editor").hidden = true; $("tabs").hidden = false; $("newBtn").hidden = false; showTab(tab); window.scrollTo(0, 0); }
 
 function renderSteps() {
   $("steps").innerHTML = draft.steps.map((s, i) => `
@@ -547,11 +660,11 @@ $("edDelete").addEventListener("click", async () => {
 });
 
 /* ---------- player ---------- */
-const P = { w: null, plan: [], idx: 0, running: false, endAt: 0, left: 0, done: false, beep: true, voice: true, raf: 0, iv: 0, wake: null, lastBeep: -1 };
+const P = { w: null, plan: [], idx: 0, running: false, endAt: 0, left: 0, done: false, beep: true, voice: true, raf: 0, iv: 0, wake: null, lastBeep: -1, active: 0, runFrom: 0, startedAt: 0, logged: false };
 let actx = null;
 function beep(freq = 880, dur = 0.15, vol = 0.25) {
   if (!P.beep) return;
-  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {}
+  setSession();
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
     if (actx.state === "suspended") actx.resume();
@@ -561,8 +674,13 @@ function beep(freq = 880, dur = 0.15, vol = 0.25) {
     o.start(t); o.stop(t + dur + 0.02);
   } catch {}
 }
+function setSession() {
+  // "ambient" mixes with music from other apps; "playback" is needed while our own songs play.
+  try { if (navigator.audioSession) navigator.audioSession.type = M.list.length ? "playback" : "ambient"; } catch {}
+}
 function say(text) {
   if (!P.voice) return;
+  duck(3);
   try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 1.05; speechSynthesis.speak(u); } catch {}
 }
 function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch {} }
@@ -572,14 +690,18 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 
 function startPlayer(w) {
   P.w = w; P.plan = expand(w); P.idx = 0; P.running = false; P.done = false; P.left = P.plan[0]?.secs || 0; P.lastBeep = -1;
+  P.active = 0; P.runFrom = 0; P.startedAt = 0; P.logged = false; $("pFin").hidden = true; $("pNext").hidden = false;
   $("pName").textContent = w.name; $("player").hidden = false; document.body.style.overflow = "hidden";
   $("stage").classList.remove("finished");
   drawPlayer();
 }
 function stopPlayer() {
+  stopClock();
+  if (!P.done && !P.logged && P.active >= 60000) logSession(false);
   P.running = false; clearInterval(P.iv); cancelAnimationFrame(P.raf); wakeOff();
   try { speechSynthesis.cancel(); } catch {}
-  $("player").hidden = true; document.body.style.overflow = "";
+  $("player").hidden = true; $("musicSheet").hidden = true; document.body.style.overflow = "";
+  try { mAudio.pause(); } catch {}
 }
 function announce(i) {
   const s = P.plan[i]; if (!s) return;
@@ -590,12 +712,14 @@ function announce(i) {
 function play() {
   if (P.done) { startPlayer(P.w); }
   P.running = true; P.endAt = performance.now() + P.left * 1000;
+  P.runFrom = Date.now(); if (!P.startedAt) P.startedAt = Date.now();
   // first press of a fresh step announces it
   if (P.left === P.plan[P.idx].secs) announce(P.idx);
   wakeOn(); loop();
   clearInterval(P.iv); P.iv = setInterval(tick, 250);
 }
-function pause() { tick(); P.running = false; clearInterval(P.iv); cancelAnimationFrame(P.raf); wakeOff(); drawPlayer(); }
+function stopClock() { if (P.running && P.runFrom) { P.active += Date.now() - P.runFrom; P.runFrom = 0; } }
+function pause() { tick(); stopClock(); P.running = false; clearInterval(P.iv); cancelAnimationFrame(P.raf); wakeOff(); drawPlayer(); }
 function loop() { if (!P.running) return; tick(); P.raf = requestAnimationFrame(loop); }
 function tick() {
   if (!P.running) return;
@@ -612,17 +736,19 @@ function tick() {
   drawPlayer();
 }
 function finish() {
+  stopClock();
   P.running = false; P.done = true; P.idx = P.plan.length - 1; P.left = 0; clearInterval(P.iv); cancelAnimationFrame(P.raf); wakeOff();
   beep(988, 0.2); setTimeout(() => beep(1319, 0.5), 220); buzz([300, 100, 300, 100, 500]);
   say("Workout complete. Nice work.");
-  drawPlayer();
+  const fresh = P.logged || P.active < 60000 ? null : logSession(true);
+  drawPlayer(); showFinish(fresh);
 }
 function jump(d) {
   const j = P.idx + d;
   if (d < 0 && P.plan[P.idx].secs - P.left > 3) { /* back restarts current step first */ }
   else if (j < 0 || j >= P.plan.length) { if (j >= P.plan.length) finish(); return; }
   else P.idx = j;
-  P.done = false; $("stage").classList.remove("finished");
+  P.done = false; $("stage").classList.remove("finished"); $("pFin").hidden = true; $("pNext").hidden = false;
   P.left = P.plan[P.idx].secs; P.lastBeep = -1;
   if (P.running) { P.endAt = performance.now() + P.left * 1000; announce(P.idx); }
   drawPlayer();
@@ -635,7 +761,7 @@ function drawPlayer() {
   if (P.done) {
     st.classList.add("finished");
     $("pKind").textContent = "Done"; $("pClock").textContent = fmt(total(P.w)); $("pRound").textContent = "Workout complete";
-    $("pNext").innerHTML = "Total time"; $("pBar").style.width = "100%";
+    $("pNext").hidden = true; $("pBar").style.width = "100%";
   } else {
     $("pKind").textContent = s.label;
     $("pClock").textContent = fmt(Math.ceil(P.left));
@@ -646,6 +772,7 @@ function drawPlayer() {
   }
   const before = P.plan.slice(0, P.idx).reduce((a, x) => a + x.secs, 0);
   const el = P.done ? total(P.w) : before + (s.secs - P.left);
+  if (P.done) $("pClock").textContent = fmt(Math.round(P.active / 1000));
   $("pEl").textContent = fmt(el); $("pRem").textContent = fmt(total(P.w) - el);
   $("pLane").innerHTML = laneHTML(P.plan, P.done ? P.plan.length : P.idx);
   $("pPlay").textContent = P.done ? "Again" : P.running ? "Pause" : (el > 0 ? "Resume" : "Start");
@@ -663,8 +790,8 @@ document.addEventListener("keydown", e => {
 });
 
 $("exportBtn").addEventListener("click", () => {
-  if (!store.items.length) { toast("No saved workouts to back up yet"); return; }
-  const blob = new Blob([JSON.stringify({ app: "interval-keeper", version: 1, workouts: store.items }, null, 2)], { type: "application/json" });
+  if (!store.items.length && !H.list.length) { toast("Nothing to back up yet"); return; }
+  const blob = new Blob([JSON.stringify({ app: "interval-keeper", version: 2, workouts: store.items, history: H.list, badges: H.badges }, null, 2)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
   a.download = `interval-keeper-backup-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
@@ -676,12 +803,238 @@ $("importFile").addEventListener("change", async e => {
     if (!Array.isArray(list)) throw 0;
     let n = 0;
     for (const w of list) { if (!Array.isArray(w?.steps)) continue; await store.save({ ...clean(w), id: w.id || uid(), updated: w.updated }); n++; }
-    toast(n ? `Restored ${n} workout${n > 1 ? "s" : ""}` : "No workouts found in that file");
+    const sessions = H.merge(data.history, data.badges);
+    toast(n || sessions ? `Restored ${n} workout${n === 1 ? "" : "s"} and ${sessions} session${sessions === 1 ? "" : "s"}` : "Nothing to restore in that file");
   } catch { toast("That file isn't an Interval Keeper backup"); }
 });
 
+/* ---------- tabs ---------- */
+let tab = "library";
+function showTab(t) {
+  tab = t;
+  for (const b of $("tabs").children) b.setAttribute("aria-pressed", b.dataset.tab === t);
+  $("library").hidden = t !== "library"; $("progress").hidden = t !== "progress";
+  if (t === "progress") renderProgress();
+  try { localStorage.setItem("interval-keeper.tab", t); } catch {}
+}
+$("tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (b) showTab(b.dataset.tab); });
+
+/* ---------- history ---------- */
+const H_KEY = "interval-keeper.history", B_KEY = "interval-keeper.badges";
+const H = {
+  list: [], badges: {},
+  load() {
+    try { this.list = JSON.parse(localStorage.getItem(H_KEY) || "[]") || []; } catch { this.list = []; }
+    try { this.badges = JSON.parse(localStorage.getItem(B_KEY) || "{}") || {}; } catch { this.badges = {}; }
+  },
+  write() { try { localStorage.setItem(H_KEY, JSON.stringify(this.list)); localStorage.setItem(B_KEY, JSON.stringify(this.badges)); } catch {} },
+  merge(list, badges) {
+    let n = 0;
+    if (Array.isArray(list)) for (const x of list) {
+      if (!x || !x.id || !(+x.start) || !(+x.secs) || this.list.some(y => y.id === x.id)) continue;
+      this.list.push({ id: String(x.id), name: String(x.name || "Workout").slice(0, 80), type: String(x.type || ""), start: +x.start, secs: Math.round(+x.secs), completed: !!x.completed }); n++;
+    }
+    if (badges && typeof badges === "object") for (const [k, v] of Object.entries(badges)) if (BADGES.some(b => b.id === k) && !this.badges[k]) this.badges[k] = +v || Date.now();
+    this.list.sort((a, b) => a.start - b.start); awardBadges(); this.write();
+    if (tab === "progress") renderProgress();
+    return n;
+  },
+};
+function logSession(completed) {
+  const secs = Math.round(P.active / 1000);
+  H.list.push({ id: uid(), name: P.w.name, type: P.w.type, start: P.startedAt || Date.now() - P.active, secs, completed });
+  P.logged = true;
+  const fresh = awardBadges(); H.write();
+  if (!completed) toast(`Saved ${fmtDur(secs)} to your progress`);
+  return fresh;
+}
+const fmtDur = s => { const m = Math.round(s / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m` : `${m}m`; };
+
+/* ---------- dates ---------- */
+const dayKey = t => { const d = new Date(t); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const startOfWeek = d => { const x = startOfDay(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }; // Monday
+function streaks() {
+  const days = new Set(H.list.map(x => dayKey(x.start)));
+  let cur = 0; const d = startOfDay(new Date());
+  if (!days.has(dayKey(d))) d.setDate(d.getDate() - 1);
+  while (days.has(dayKey(d))) { cur++; d.setDate(d.getDate() - 1); }
+  const sorted = [...new Set(H.list.map(x => startOfDay(new Date(x.start)).getTime()))].sort((a, b) => a - b);
+  let best = 0, run = 0, prev = null;
+  for (const t of sorted) { run = prev !== null && Math.round((t - prev) / 864e5) === 1 ? run + 1 : 1; best = Math.max(best, run); prev = t; }
+  return { cur, best };
+}
+function bestWeekMins() {
+  const w = {}; for (const x of H.list) { const k = startOfWeek(new Date(x.start)).getTime(); w[k] = (w[k] || 0) + x.secs; }
+  return Math.max(0, ...Object.values(w)) / 60;
+}
+
+/* ---------- badges ---------- */
+const BADGES = [
+  { id: "first",   g: "1",    c: "--k-walk",   n: "First step",      d: "Finish your first workout",       p: s => [s.count, 1] },
+  { id: "s3",      g: "3d",   c: "--k-jog",    n: "On a roll",       d: "Work out 3 days in a row",        p: s => [s.best, 3] },
+  { id: "s7",      g: "7d",   c: "--k-run",    n: "Full week",       d: "Work out 7 days in a row",        p: s => [s.best, 7] },
+  { id: "s30",     g: "30d",  c: "--k-sprint", n: "Unstoppable",     d: "Work out 30 days in a row",       p: s => [s.best, 30] },
+  { id: "c10",     g: "10",   c: "--k-walk",   n: "Ten down",        d: "Log 10 workouts",                 p: s => [s.count, 10] },
+  { id: "c25",     g: "25",   c: "--k-jog",    n: "Regular",         d: "Log 25 workouts",                 p: s => [s.count, 25] },
+  { id: "c50",     g: "50",   c: "--k-run",    n: "Committed",       d: "Log 50 workouts",                 p: s => [s.count, 50] },
+  { id: "c100",    g: "100",  c: "--k-sprint", n: "Century",         d: "Log 100 workouts",                p: s => [s.count, 100] },
+  { id: "w150",    g: "150",  c: "--k-work",   n: "150 club",        d: "150 minutes in one week",         p: s => [Math.floor(s.bestWeek), 150] },
+  { id: "long",    g: "60'",  c: "--k-cool",   n: "Long haul",       d: "One workout of 60 minutes",       p: s => [Math.floor(s.longest / 60), 60] },
+  { id: "h10",     g: "10h",  c: "--k-warm",   n: "10 hours",        d: "10 hours in total",               p: s => [Math.floor(s.total / 3600), 10] },
+  { id: "h50",     g: "50h",  c: "--k-run",    n: "50 hours",        d: "50 hours in total",               p: s => [Math.floor(s.total / 3600), 50] },
+  { id: "early",   g: "AM",   c: "--k-warm",   n: "Early bird",      d: "Start a workout before 7 am",     p: s => [s.early ? 1 : 0, 1] },
+  { id: "night",   g: "PM",   c: "--k-cool",   n: "Night owl",       d: "Start a workout after 9 pm",      p: s => [s.night ? 1 : 0, 1] },
+  { id: "weekend", g: "S+S",  c: "--k-work",   n: "Weekend warrior", d: "Work out Saturday and Sunday",    p: s => [s.weekend ? 1 : 0, 1] },
+];
+function badgeStats() {
+  const st = streaks();
+  const sat = new Set(), sun = new Set();
+  for (const x of H.list) { const d = new Date(x.start); if (d.getDay() === 6) sat.add(startOfDay(d).getTime() + 864e5); if (d.getDay() === 0) sun.add(startOfDay(d).getTime()); }
+  return {
+    count: H.list.length, best: st.best, cur: st.cur, bestWeek: bestWeekMins(),
+    total: H.list.reduce((a, x) => a + x.secs, 0), longest: Math.max(0, ...H.list.map(x => x.secs)),
+    early: H.list.some(x => new Date(x.start).getHours() < 7), night: H.list.some(x => new Date(x.start).getHours() >= 21),
+    weekend: [...sat].some(t => sun.has(t)),
+  };
+}
+function awardBadges() {
+  const s = badgeStats(), fresh = [];
+  for (const b of BADGES) { const [v, t] = b.p(s); if (v >= t && !H.badges[b.id]) { H.badges[b.id] = Date.now(); fresh.push(b); } }
+  return fresh;
+}
+function badgeHTML(b, s) {
+  const got = H.badges[b.id]; const [v, t] = b.p(s);
+  return `<div class="badge ${got ? "" : "locked"}" title="${esc(b.d)}">
+    <div class="medal" style="--mc:var(${b.c})">${esc(b.g)}</div>
+    <div class="n">${esc(b.n)}</div>
+    <div class="d">${got ? "Earned " + new Date(got).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : esc(b.d)}</div>
+    ${!got && t > 1 ? `<div class="bprog"><i style="width:${Math.min(100, v / t * 100)}%"></i></div>` : ""}
+  </div>`;
+}
+function showFinish(fresh) {
+  if (!fresh) { $("pFin").innerHTML = "<div>Workouts under 1 minute aren't saved to your progress</div>"; $("pFin").hidden = false; return; }
+  const wk = startOfWeek(new Date()).getTime();
+  const weekSecs = H.list.filter(x => x.start >= wk).reduce((a, x) => a + x.secs, 0);
+  const s = badgeStats();
+  $("pFin").innerHTML = `<div>Saved to your progress · <b>${fmtDur(weekSecs)}</b> this week${s.cur > 1 ? ` · ${s.cur}-day streak` : ""}</div>
+    ${fresh.length ? `<div class="new">${fresh.map(b => badgeHTML(b, s)).join("")}</div>` : ""}`;
+  $("pFin").hidden = false;
+  if (fresh.length) setTimeout(() => say(`New badge: ${fresh.map(b => b.n).join(", ")}`), 2600);
+}
+
+/* ---------- progress view ---------- */
+const PV = { period: "week", offset: 0, sel: -1 };
+function periodRange() {
+  const now = new Date(); let from, to, buckets = [], label;
+  if (PV.period === "week") {
+    from = startOfWeek(now); from.setDate(from.getDate() + PV.offset * 7); to = new Date(from); to.setDate(to.getDate() + 7);
+    for (let i = 0; i < 7; i++) { const a = new Date(from); a.setDate(a.getDate() + i); const b = new Date(a); b.setDate(b.getDate() + 1);
+      buckets.push({ a, b, x: "MTWTFSS"[i], tip: a.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) }); }
+    const end = new Date(to); end.setDate(end.getDate() - 1);
+    label = PV.offset === 0 ? "This week" : PV.offset === -1 ? "Last week" : `${from.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${end.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  } else if (PV.period === "month") {
+    from = new Date(now.getFullYear(), now.getMonth() + PV.offset, 1); to = new Date(from.getFullYear(), from.getMonth() + 1, 1);
+    const n = Math.round((to - from) / 864e5);
+    for (let i = 0; i < n; i++) { const a = new Date(from.getFullYear(), from.getMonth(), i + 1), b = new Date(from.getFullYear(), from.getMonth(), i + 2);
+      buckets.push({ a, b, x: [1, 8, 15, 22, 29].includes(i + 1) ? String(i + 1) : "", tip: a.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) }); }
+    label = from.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  } else {
+    from = new Date(now.getFullYear() + PV.offset, 0, 1); to = new Date(from.getFullYear() + 1, 0, 1);
+    for (let i = 0; i < 12; i++) { const a = new Date(from.getFullYear(), i, 1), b = new Date(from.getFullYear(), i + 1, 1);
+      buckets.push({ a, b, x: a.toLocaleDateString(undefined, { month: "narrow" }), tip: a.toLocaleDateString(undefined, { month: "long", year: "numeric" }) }); }
+    label = String(from.getFullYear());
+  }
+  return { from, to, buckets, label };
+}
+function niceStep(maxMin) { for (const s of [5, 10, 15, 30, 60, 120, 300, 600, 1200]) if (maxMin / s <= 2) return s; return 1800; }
+function renderProgress() {
+  const { from, to, buckets, label } = periodRange();
+  const inRange = H.list.filter(x => x.start >= from.getTime() && x.start < to.getTime());
+  $("pvLabel").textContent = label; $("pvNext").disabled = PV.offset >= 0;
+  for (const b of $("periodTabs").children) b.setAttribute("aria-pressed", b.dataset.p === PV.period);
+  $("kTime").textContent = fmtDur(inRange.reduce((a, x) => a + x.secs, 0));
+  $("kCount").textContent = inRange.length;
+  const s = badgeStats(); $("kStreak").textContent = s.cur;
+
+  for (const b of buckets) { b.secs = 0; b.n = 0; for (const x of inRange) if (x.start >= b.a.getTime() && x.start < b.b.getTime()) { b.secs += x.secs; b.n++; } }
+  const maxMin = Math.max(...buckets.map(b => b.secs / 60));
+  const step = niceStep(Math.max(maxMin, 1)); const top = Math.max(step, Math.ceil(maxMin / step) * step);
+  const cols = `repeat(${buckets.length}, 1fr)`;
+  const gl = maxMin > 0 ? [step, top > step ? top : null].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i) : [];
+  const unit = v => v >= 60 && v % 60 === 0 ? `${v / 60}h` : `${v}m`;
+  $("chart").innerHTML = `
+    <div class="plot" style="grid-template-columns:${cols}">
+      ${gl.map(v => `<div class="grid-line" style="bottom:${v / top * 100}%"><span>${unit(v)}</span></div>`).join("")}
+      ${buckets.map((b, i) => `<button class="col ${b.secs ? "" : "zero"} ${i === PV.sel ? "sel" : ""}" data-i="${i}" aria-label="${esc(b.tip)}: ${fmtDur(b.secs)}"><i style="height:${b.secs / 60 / top * 100}%"></i></button>`).join("")}
+    </div>
+    <div class="xl" style="grid-template-columns:${cols}">${buckets.map(b => `<span>${b.x}</span>`).join("")}</div>
+    <div class="readout" id="readout">${maxMin > 0 ? "Tap a bar for details" : "No workouts in this period yet"}</div>`;
+  $("chart").onclick = $("chart").onmouseover = e => {
+    const c = e.target.closest(".col"); if (!c) return; const b = buckets[+c.dataset.i];
+    $("readout").innerHTML = `${esc(b.tip)} · <b>${fmtDur(b.secs)}</b> · ${b.n} workout${b.n === 1 ? "" : "s"}`;
+  };
+
+  $("badgeCount").textContent = `${Object.keys(H.badges).length} of ${BADGES.length}`;
+  $("badgeGrid").innerHTML = [...BADGES].sort((a, b) => (H.badges[b.id] ? 1 : 0) - (H.badges[a.id] ? 1 : 0)).map(b => badgeHTML(b, s)).join("");
+
+  const recent = [...H.list].sort((a, b) => b.start - a.start).slice(0, 30);
+  $("histList").innerHTML = recent.length ? recent.map(x => `<article class="wcard" data-h="${esc(x.id)}"><div class="row1"><div style="min-width:0">
+      <h3 style="font-size:1.05rem">${esc(x.name)}${x.completed ? "" : '<span class="tag">Ended early</span>'}</h3>
+      <div class="when">${new Date(x.start).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div></div>
+      <div class="side"><span class="time mono">${fmtDur(x.secs)}</span><button class="linkish" data-hdel aria-label="Remove this session">✕</button></div></div></article>`).join("")
+    : `<div class="empty">Finish a workout and it shows up here.</div>`;
+}
+$("periodTabs").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (!b) return; PV.period = b.dataset.p; PV.offset = 0; renderProgress(); });
+$("pvPrev").addEventListener("click", () => { PV.offset--; renderProgress(); });
+$("pvNext").addEventListener("click", () => { if (PV.offset < 0) { PV.offset++; renderProgress(); } });
+$("histList").addEventListener("click", e => {
+  const b = e.target.closest("[data-hdel]"); if (!b) return;
+  if (!b.dataset.confirm) { b.dataset.confirm = "1"; b.textContent = "Remove?"; return; }
+  const id = b.closest("[data-h]").dataset.h; H.list = H.list.filter(x => x.id !== id); H.write(); renderProgress(); toast("Session removed");
+});
+
+/* ---------- music ---------- */
+const M = { list: [], i: 0, gain: null, wired: false };
+const mAudio = $("mAudio");
+function wireMusic() {
+  // Route songs through Web Audio so voice cues can lower the volume (iPhone ignores audio.volume).
+  if (M.wired) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const src = actx.createMediaElementSource(mAudio); M.gain = actx.createGain(); src.connect(M.gain); M.gain.connect(actx.destination); M.wired = true;
+  } catch {}
+}
+function duck(sec) {
+  if (!M.gain || mAudio.paused) return;
+  const t = actx.currentTime; const g = M.gain.gain;
+  try { g.cancelScheduledValues(t); g.setTargetAtTime(0.25, t, 0.08); g.setTargetAtTime(1, t + sec, 0.3); } catch {}
+}
+function loadSong(i, autoplay) {
+  if (!M.list.length) return;
+  M.i = (i + M.list.length) % M.list.length; mAudio.src = M.list[M.i].url;
+  $("mTitle").textContent = `${M.i + 1}/${M.list.length} · ${M.list[M.i].name}`;
+  if (autoplay) mAudio.play().catch(() => {});
+}
+$("mFiles").addEventListener("change", e => {
+  const files = [...e.target.files]; e.target.value = ""; if (!files.length) return;
+  M.list.forEach(x => URL.revokeObjectURL(x.url));
+  M.list = files.map(f => ({ name: f.name.replace(/\.[^.]+$/, ""), url: URL.createObjectURL(f) }));
+  setSession(); wireMusic(); if (actx?.state === "suspended") actx.resume();
+  $("mPlay").disabled = $("mNext").disabled = false; loadSong(0, true);
+});
+$("mPlay").addEventListener("click", () => { if (actx?.state === "suspended") actx.resume(); mAudio.paused ? mAudio.play().catch(() => {}) : mAudio.pause(); });
+$("mNext").addEventListener("click", () => loadSong(M.i + 1, true));
+mAudio.addEventListener("ended", () => loadSong(M.i + 1, true));
+mAudio.addEventListener("play", () => { $("mPlay").textContent = "⏸"; $("tMusic").textContent = "♪ ▶"; });
+mAudio.addEventListener("pause", () => { $("mPlay").textContent = "▶"; $("tMusic").textContent = "♪"; });
+$("tMusic").addEventListener("click", () => { $("musicSheet").hidden = !$("musicSheet").hidden; });
+$("msClose").addEventListener("click", () => { $("musicSheet").hidden = true; });
+
+H.load(); if (awardBadges().length) H.write();
 renderLibrary();
 store.init();
+try { if (localStorage.getItem("interval-keeper.tab") === "progress") showTab("progress"); } catch {}
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
 </script>
