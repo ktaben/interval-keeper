@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Interval Keeper</title>
+<meta name="description" content="Build and run your own interval workouts.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Intervals">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#eef1f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f131a" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one column "training card" — library → editor → full-bleed timer; interval kinds carry their own lane colors */
+:root {
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --surface-2: #e3e8ef;
+  --fg: #141a24;
+  --muted: #5b6676;
+  --line: #d3d9e2;
+  --accent: #2348d8;
+  --accent-fg: #ffffff;
+  --danger: #c4322b;
+
+  --k-warm: #d99a1e;
+  --k-walk: #1b9a86;
+  --k-jog: #4a8fd9;
+  --k-run: #e0533a;
+  --k-sprint: #c22c7d;
+  --k-work: #7a4fd6;
+  --k-rest: #7d8798;
+  --k-cool: #3d7bb3;
+
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f131a; --surface: #171d27; --surface-2: #222a37; --fg: #e9edf3; --muted: #95a0b2;
+    --line: #2b3443; --accent: #6f8cff; --accent-fg: #0b1020; --danger: #ff6b62;
+    --k-warm: #f0b545; --k-walk: #35c2aa; --k-jog: #6aaaf0; --k-run: #ff7559; --k-sprint: #f05aa6;
+    --k-work: #a07ef5; --k-rest: #9aa4b5; --k-cool: #63a0d6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f131a; --surface: #171d27; --surface-2: #222a37; --fg: #e9edf3; --muted: #95a0b2;
+  --line: #2b3443; --accent: #6f8cff; --accent-fg: #0b1020; --danger: #ff6b62;
+  --k-warm: #f0b545; --k-walk: #35c2aa; --k-jog: #6aaaf0; --k-run: #ff7559; --k-sprint: #f05aa6;
+  --k-work: #a07ef5; --k-rest: #9aa4b5; --k-cool: #63a0d6;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+.backup { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 18px; align-items: center; }
+.backup .linkish { padding-left: 0; padding-right: 12px; }
+html, body { min-height: 100%; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body); margin: 0; }
+.wrap { max-width: 640px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; display: grid; gap: 36px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.05; }
+h1 { font-size: 1.9rem; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
+h2 { font: 600 .74rem/1 var(--body); text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+.eyebrow { font: 600 .72rem/1 var(--body); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.muted { color: var(--muted); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+button, .btn { font: 600 .92rem/1 var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  padding: 10px 14px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+button.ghost { background: transparent; border-color: transparent; color: var(--muted); padding: 8px; }
+button.ghost:hover { color: var(--fg); background: var(--surface-2); }
+button.danger { color: var(--danger); }
+button:disabled { opacity: .4; cursor: default; }
+input, select, textarea { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-width: 0; }
+textarea { width: 100%; resize: vertical; min-height: 64px; }
+label.field { display: grid; gap: 6px; font-weight: 600; font-size: .85rem; }
+
+header.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+/* lane bar: proportional strip of a workout */
+.lane { display: flex; height: 4px; border-radius: 2px; overflow: hidden; gap: 2px; }
+.lane span { display: block; min-width: 2px; }
+.lane.tall { height: 10px; border-radius: 3px; }
+
+.list { display: grid; border-top: 1px solid var(--line); }
+.wcard { padding-block: 16px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+.wcard .row1 { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.wcard h3 { font-size: 1.25rem; font-weight: 600; letter-spacing: .01em; }
+.wcard .summary { font-size: .85rem; color: var(--muted); min-width: 0; overflow-wrap: anywhere; margin-top: 2px; }
+.wcard .side { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.wcard .time { font-size: .85rem; color: var(--muted); margin-right: 6px; }
+.play { width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%; font-size: .85rem; }
+.linkish { background: none; border: 0; padding: 6px; color: var(--muted); font-weight: 500; font-size: .82rem; }
+.linkish:hover { color: var(--fg); }
+.empty { padding-block: 22px; color: var(--muted); font-size: .9rem; }
+.section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+
+/* editor */
+.panel { display: grid; gap: 22px; }
+details.more summary { cursor: pointer; color: var(--muted); font-size: .85rem; font-weight: 500; list-style: none; }
+details.more summary::-webkit-details-marker { display: none; }
+details.more summary::before { content: "+ "; }
+details.more[open] summary::before { content: "− "; }
+details.more > div { display: grid; gap: 12px; margin-top: 12px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+.parse .hint { font-size: .82rem; color: var(--muted); }
+.steps { display: grid; gap: 8px; }
+.step { display: grid; grid-template-columns: 3px 110px 1fr auto auto; gap: 8px; align-items: center; }
+.step .swatch { align-self: stretch; border-radius: 2px; }
+.step select, .step input { background: transparent; }
+.dur { display: flex; align-items: center; gap: 4px; }
+.dur input { width: 54px; text-align: center; font-family: var(--mono); padding: 9px 4px; }
+.dur span { color: var(--muted); font-size: .8rem; }
+.step .tools { display: flex; }
+.quick { display: flex; gap: 6px; flex-wrap: wrap; }
+.quick button { font-size: .8rem; padding: 7px 10px; }
+.quick button i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.totals { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.totals strong { font: 600 1.4rem/1 var(--display); }
+.bar-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.err { color: var(--danger); font-size: .85rem; }
+
+/* player */
+#player { position: fixed; inset: 0; background: var(--bg); z-index: 10; display: flex; flex-direction: column;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px calc(env(safe-area-inset-bottom, 0px) + 18px); }
+#player .ptop { display: flex; justify-content: space-between; align-items: center; gap: 10px; max-width: 760px; width: 100%; margin: 0 auto; }
+#player .pname { font: 700 1.1rem/1.1 var(--display); text-transform: uppercase; letter-spacing: .04em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; text-align: center; max-width: 760px; width: 100%; margin: 0 auto; }
+.now-kind { font: 600 clamp(2.2rem, 10vw, 4.5rem)/0.95 var(--display); text-transform: uppercase; letter-spacing: .02em; color: var(--kc, var(--fg)); }
+.clock { font: 500 clamp(4.5rem, 24vw, 10rem)/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+.round { font: 600 .8rem/1 var(--body); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.ring { width: 100%; max-width: 420px; height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+.ring > div { height: 100%; background: var(--kc, var(--accent)); width: 0; }
+.next { font-size: 1rem; color: var(--muted); }
+.next b { color: var(--fg); }
+.pfoot { max-width: 760px; width: 100%; margin: 0 auto; display: grid; gap: 14px; }
+.overall { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); }
+.lane .cur { outline: 2px solid var(--fg); outline-offset: -2px; }
+.lane .done { opacity: .35; }
+.controls { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 10px; }
+.controls button { justify-content: center; padding: 16px 10px; font-size: 1rem; }
+.controls .big { font: 600 1.2rem/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
+.toggles { display: flex; gap: 6px; }
+.toggles button[aria-pressed="false"] { opacity: .5; text-decoration: line-through; }
+.finished .clock { color: var(--k-walk); }
+
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); transform: translateX(-50%); background: var(--fg); color: var(--bg);
+  padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: .9rem; z-index: 20; }
+.storage-note { font-size: .8rem; color: var(--muted); }
+
+@media (max-width: 560px) {
+  h1 { font-size: 2rem; }
+  .grid2, .grid3 { grid-template-columns: 1fr 1fr; }
+  .grid3 > :first-child { grid-column: 1 / -1; }
+  .step { grid-template-columns: 3px 1fr auto; grid-template-areas: "sw kind tools" "sw label dur"; }
+  .step .swatch { grid-area: sw; grid-row: 1 / 3; }
+  .step .k { grid-area: kind; } .step .lbl { grid-area: label; } .step .dur { grid-area: dur; } .step .tools { grid-area: tools; justify-content: end; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ring > div { transition: width .25s linear; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app">
+  <header class="top">
+    <h1>Interval Keeper</h1>
+    <button class="primary" id="newBtn">+ New</button>
+  </header>
+
+  <!-- LIBRARY -->
+  <section id="library">
+    <div class="section-head">
+      <h2>My workouts</h2>
+      <span class="storage-note" id="storageNote"></span>
+    </div>
+    <div class="list" id="myList"></div>
+    <div class="backup">
+      <button class="linkish" id="exportBtn">Back up workouts</button>
+      <label class="linkish" for="importFile" style="cursor:pointer">Restore from backup</label>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+
+    <div class="section-head" style="margin-top:36px">
+      <h2>Templates</h2>
+
+    </div>
+    <div class="list" id="tplList"></div>
+  </section>
+
+  <!-- EDITOR -->
+  <section id="editor" hidden>
+    <div class="section-head">
+      <h2 id="edTitle">New workout</h2>
+      <button class="ghost" id="edCancelTop">← Back</button>
+    </div>
+    <form class="panel" id="edForm" novalidate>
+      <div class="grid2">
+        <label class="field">Name
+          <input id="fName" type="text" placeholder="e.g. Walk 5 / Run 5 from IG" maxlength="80">
+        </label>
+        <label class="field">Type of workout
+          <select id="fType">
+            <option>Walk / Run</option><option>Running</option><option>HIIT</option><option>Cycling</option>
+            <option>Treadmill</option><option>Strength circuit</option><option>Rowing</option><option>Other</option>
+          </select>
+        </label>
+      </div>
+
+      <details class="more" id="pasteBox">
+        <summary>Paste from a caption</summary>
+        <div>
+          <textarea id="fParse" aria-label="Caption text" placeholder="5 min walk, 5 min run x3"></textarea>
+          <div><button type="button" id="parseBtn">Fill intervals</button> <span class="err" id="parseErr"></span></div>
+        </div>
+      </details>
+
+      <div class="field">Repeat
+        <div class="dur"><input id="fRounds" type="number" min="1" max="50" value="1" style="width:70px"><span>times</span></div>
+      </div>
+
+      <div style="display:grid;gap:10px">
+        <div class="eyebrow">Intervals</div>
+        <div class="steps" id="steps"></div>
+        <div class="quick" id="quick"></div>
+      </div>
+
+      <details class="more" id="extras">
+        <summary>Warm-up, cool-down, notes</summary>
+        <div>
+          <div class="grid2">
+            <div class="field">Warm-up
+              <div class="dur"><input id="fWarm" type="number" min="0" max="60" value="0"><span>min</span></div>
+            </div>
+            <div class="field">Cool-down
+              <div class="dur"><input id="fCool" type="number" min="0" max="60" value="0"><span>min</span></div>
+            </div>
+          </div>
+          <label class="field">Notes
+            <textarea id="fNotes" placeholder="Where you found it, pace, incline" maxlength="500"></textarea>
+          </label>
+        </div>
+      </details>
+
+      <div style="display:grid;gap:10px">
+        <div class="totals"><span class="eyebrow">Total time</span><strong class="mono" id="edTotal">0:00</strong></div>
+        <div class="lane tall" id="edLane"></div>
+        <div id="edSummary" hidden></div>
+      </div>
+
+      <div class="err" id="edErr"></div>
+      <div class="bar-actions">
+        <button type="button" class="danger" id="edDelete" hidden>Delete</button>
+        <button type="button" id="edCancel">Cancel</button>
+        
+        <button type="submit" class="primary">Save workout</button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<!-- PLAYER -->
+<div id="player" hidden>
+  <div class="ptop">
+    <button class="ghost" id="pClose">✕ End</button>
+    <div class="pname" id="pName"></div>
+    <div class="toggles">
+      <button class="ghost" id="tBeep" aria-pressed="true" title="Beeps">Beep</button>
+      <button class="ghost" id="tVoice" aria-pressed="true" title="Voice cues">Voice</button>
+    </div>
+  </div>
+  <div class="stage" id="stage">
+    <div class="round" id="pRound"></div>
+    <div class="now-kind" id="pKind"></div>
+    <div class="clock" id="pClock">0:00</div>
+    <div class="ring"><div id="pBar"></div></div>
+    <div class="next" id="pNext"></div>
+  </div>
+  <div class="pfoot">
+    <div class="lane tall" id="pLane"></div>
+    <div class="overall"><span>Elapsed <b class="mono" id="pEl">0:00</b></span><span>Remaining <b class="mono" id="pRem">0:00</b></span></div>
+    <div class="controls">
+      <button id="pPrev">⏮ Back</button>
+      <button class="primary big" id="pPlay">Start</button>
+      <button id="pNextBtn">Skip ⏭</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+const KINDS = {
+  warm:   { name: "Warm-up",   say: "Warm up" },
+  walk:   { name: "Walk",      say: "Walk" },
+  jog:    { name: "Jog",       say: "Jog" },
+  run:    { name: "Run",       say: "Run" },
+  sprint: { name: "Sprint",    say: "Sprint" },
+  work:   { name: "Work",      say: "Work" },
+  rest:   { name: "Rest",      say: "Rest" },
+  cool:   { name: "Cool-down", say: "Cool down" },
+};
+const kc = k => `var(--k-${KINDS[k] ? k : "work"})`;
+const $ = id => document.getElementById(id);
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+
+const fmt = s => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  return h ? `${h}:${String(m).padStart(2,"0")}:${String(x).padStart(2,"0")}` : `${m}:${String(x).padStart(2,"0")}`; };
+const fmtWords = s => { const m = Math.floor(s / 60), x = s % 60; const p = [];
+  if (m) p.push(`${m} minute${m > 1 ? "s" : ""}`); if (x) p.push(`${x} second${x > 1 ? "s" : ""}`); return p.join(" ") || "0 seconds"; };
+const fmtShort = s => s % 60 === 0 ? `${s / 60} min` : s < 60 ? `${s}s` : `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2200); }
+
+/* ---------- model ---------- */
+const stepLabel = s => (s.label || "").trim() || KINDS[s.kind]?.name || "Interval";
+function expand(w) {
+  const plan = [];
+  if (w.warmup > 0) plan.push({ kind: "warm", label: "Warm-up", secs: w.warmup, round: 0 });
+  for (let r = 1; r <= Math.max(1, w.rounds); r++)
+    for (const s of w.steps) if (s.secs > 0) plan.push({ kind: s.kind, label: stepLabel(s), secs: s.secs, round: r });
+  if (w.cooldown > 0) plan.push({ kind: "cool", label: "Cool-down", secs: w.cooldown, round: 0 });
+  return plan;
+}
+const total = w => expand(w).reduce((a, s) => a + s.secs, 0);
+const summary = w => {
+  const core = w.steps.map(s => `${fmtShort(s.secs)} ${stepLabel(s).toLowerCase()}`).join(" → ");
+  return [w.warmup ? `${fmtShort(w.warmup)} warm-up` : "", core + (w.rounds > 1 ? `, ×${w.rounds}` : ""), w.cooldown ? `${fmtShort(w.cooldown)} cool-down` : ""].filter(Boolean).join(" · ");
+};
+function laneHTML(plan, cur = -1) {
+  return plan.map((s, i) => `<span style="flex:${s.secs};background:${kc(s.kind)}" class="${i === cur ? "cur" : i < cur ? "done" : ""}" title="${esc(s.label)} ${fmtShort(s.secs)}"></span>`).join("");
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function clean(w) {
+  return {
+    name: String(w.name || "Untitled workout").slice(0, 80), type: String(w.type || "Other"), notes: String(w.notes || "").slice(0, 500),
+    warmup: Math.max(0, +w.warmup || 0), cooldown: Math.max(0, +w.cooldown || 0), rounds: Math.min(50, Math.max(1, Math.round(+w.rounds || 1))),
+    steps: (Array.isArray(w.steps) ? w.steps : []).map(s => ({ kind: KINDS[s.kind] ? s.kind : "work", label: String(s.label || "").slice(0, 40), secs: Math.max(0, Math.round(+s.secs || 0)) })),
+    updated: +w.updated || Date.now(),
+  };
+}
+
+const TEMPLATES = [
+  { id: "tpl-walkrun", name: "Walk 5 / Run 5", type: "Walk / Run", warmup: 0, cooldown: 0, rounds: 3,
+    steps: [{ kind: "walk", secs: 300 }, { kind: "run", secs: 300 }], notes: "The classic reel format. Easy pace on the runs." },
+  { id: "tpl-c25k", name: "Beginner run-walk", type: "Running", warmup: 300, cooldown: 300, rounds: 8,
+    steps: [{ kind: "jog", secs: 60 }, { kind: "walk", secs: 90 }], notes: "Couch-to-5K style first week." },
+  { id: "tpl-tabata", name: "Tabata", type: "HIIT", warmup: 120, cooldown: 0, rounds: 8,
+    steps: [{ kind: "work", label: "All out", secs: 20 }, { kind: "rest", secs: 10 }], notes: "" },
+  { id: "tpl-12330", name: "Treadmill pyramid", type: "Treadmill", warmup: 180, cooldown: 180, rounds: 2,
+    steps: [{ kind: "walk", label: "Incline walk", secs: 120 }, { kind: "jog", secs: 120 }, { kind: "run", secs: 60 }, { kind: "sprint", secs: 30 }, { kind: "walk", label: "Recover", secs: 90 }], notes: "" },
+].map(t => ({ ...clean(t), id: t.id }));
+
+/* ---------- storage: per-person db, with browser storage fallback ---------- */
+const LS_KEY = "interval-keeper.workouts";
+const store = {
+  mode: "local", items: [],
+  async init() {
+    this.mode = "local";
+    try { this.items = (JSON.parse(localStorage.getItem(LS_KEY) || "[]") || []).map(w => ({ ...clean(w), id: w.id })); } catch { this.items = []; }
+    try { navigator.storage?.persist?.(); } catch {}
+    setNote("");
+    renderLibrary();
+  },
+  writeLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(this.items)); } catch {} },
+  async save(w) {
+    const body = clean({ ...w, updated: Date.now() });
+    { const i = this.items.findIndex(x => x.id === w.id); const rec = { ...body, id: w.id };
+      i >= 0 ? this.items.splice(i, 1, rec) : this.items.push(rec); this.writeLocal(); renderLibrary(); }
+  },
+  async remove(id) {
+    { this.items = this.items.filter(x => x.id !== id); this.writeLocal(); renderLibrary(); }
+  },
+};
+function setNote(t) { $("storageNote").textContent = t; }
+
+/* ---------- library ---------- */
+function cardHTML(w, isTpl) {
+  return `<article class="wcard" data-id="${esc(w.id)}" data-tpl="${isTpl ? 1 : ""}">
+    <div class="row1"><div style="min-width:0"><h3>${esc(w.name)}</h3>
+      <div class="summary">${esc(summary(w))}</div></div>
+      <div class="side"><span class="time mono">${fmt(total(w))}</span>
+        <button class="linkish" data-act="${isTpl ? "copy" : "edit"}">${isTpl ? "Copy" : "Edit"}</button>
+        <button class="primary play" data-act="run" aria-label="Start ${esc(w.name)}">▶</button></div></div>
+    <div class="lane">${laneHTML(expand(w))}</div>
+  </article>`;
+}
+function renderLibrary() {
+  const mine = [...store.items].sort((a, b) => b.updated - a.updated);
+  $("myList").innerHTML = mine.length ? mine.map(w => cardHTML(w, false)).join("")
+    : `<div class="empty">Nothing saved yet. Tap <b>+ New</b>, or copy a template.</div>`;
+  $("tplList").innerHTML = TEMPLATES.map(w => cardHTML(w, true)).join("");
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const card = b.closest(".wcard"); const isTpl = !!card.dataset.tpl;
+  const w = (isTpl ? TEMPLATES : store.items).find(x => x.id === card.dataset.id); if (!w) return;
+  const act = b.dataset.act;
+  if (act === "run") startPlayer(w);
+  else if (act === "edit") openEditor(w);
+  else if (act === "copy") openEditor({ ...w, id: null });
+});
+
+/* ---------- editor ---------- */
+let draft = null, editingId = null;
+const blank = () => ({ name: "", type: "Walk / Run", warmup: 0, cooldown: 0, rounds: 1, notes: "", steps: [{ kind: "walk", label: "", secs: 300 }, { kind: "run", label: "", secs: 300 }] });
+
+function openEditor(w) {
+  editingId = w?.id || null;
+  draft = JSON.parse(JSON.stringify(w ? { ...w, steps: w.steps.map(s => ({ ...s })) } : blank()));
+  $("edTitle").textContent = editingId ? "Edit workout" : "New workout";
+  $("fName").value = draft.name; $("fType").value = draft.type; $("fNotes").value = draft.notes || "";
+  $("fRounds").value = draft.rounds; $("fWarm").value = +(draft.warmup / 60).toFixed(2); $("fCool").value = +(draft.cooldown / 60).toFixed(2);
+  $("fParse").value = ""; $("parseErr").textContent = ""; $("edErr").textContent = "";
+  $("pasteBox").open = false; $("extras").open = !!(draft.warmup || draft.cooldown || draft.notes);
+  $("edDelete").hidden = !editingId; delete $("edDelete").dataset.confirm; $("edDelete").textContent = "Delete";
+  $("library").hidden = true; $("editor").hidden = false; $("newBtn").hidden = true;
+  renderSteps(); window.scrollTo(0, 0);
+}
+function closeEditor() { $("editor").hidden = true; $("library").hidden = false; $("newBtn").hidden = false; window.scrollTo(0, 0); }
+
+function renderSteps() {
+  $("steps").innerHTML = draft.steps.map((s, i) => `
+    <div class="step" data-i="${i}">
+      <div class="swatch" style="background:${kc(s.kind)}"></div>
+      <select class="k" id="sk${i}" aria-label="Interval type">${Object.entries(KINDS).map(([k, v]) => `<option value="${k}" ${k === s.kind ? "selected" : ""}>${v.name}</option>`).join("")}</select>
+      <input class="lbl" id="sl${i}" type="text" placeholder="${esc(KINDS[s.kind].name)}" value="${esc(s.label || "")}" aria-label="Custom name (optional)" maxlength="40">
+      <div class="dur"><input id="sm${i}" type="number" min="0" max="180" value="${Math.floor(s.secs / 60)}" aria-label="Minutes"><span>m</span>
+        <input id="ss${i}" type="number" min="0" max="59" step="5" value="${s.secs % 60}" aria-label="Seconds"><span>s</span></div>
+      <div class="tools">
+        <button type="button" class="ghost" data-step="up" ${i === 0 ? "disabled" : ""} aria-label="Move up">↑</button>
+        <button type="button" class="ghost" data-step="down" ${i === draft.steps.length - 1 ? "disabled" : ""} aria-label="Move down">↓</button>
+        <button type="button" class="ghost" data-step="del" aria-label="Remove">✕</button>
+      </div>
+    </div>`).join("") || `<div class="empty">No intervals yet. Add one below.</div>`;
+  renderTotals();
+}
+function readSteps() {
+  draft.steps.forEach((s, i) => {
+    s.kind = $("sk" + i).value; s.label = $("sl" + i).value;
+    s.secs = Math.max(0, (parseInt($("sm" + i).value) || 0) * 60 + Math.min(59, parseInt($("ss" + i).value) || 0));
+  });
+  draft.name = $("fName").value; draft.type = $("fType").value; draft.notes = $("fNotes").value;
+  draft.rounds = Math.max(1, parseInt($("fRounds").value) || 1);
+  draft.warmup = Math.round((parseFloat($("fWarm").value) || 0) * 60); draft.cooldown = Math.round((parseFloat($("fCool").value) || 0) * 60);
+}
+function renderTotals() {
+  const w = clean(draft); const plan = expand(w);
+  $("edTotal").textContent = fmt(total(w)); $("edLane").innerHTML = laneHTML(plan);
+  $("edSummary").textContent = w.steps.length ? summary(w) : "";
+}
+$("steps").addEventListener("input", e => {
+  readSteps();
+  const row = e.target.closest(".step");
+  if (e.target.classList.contains("k")) { const s = draft.steps[+row.dataset.i];
+    row.querySelector(".swatch").style.background = kc(s.kind); row.querySelector(".lbl").placeholder = KINDS[s.kind].name; }
+  renderTotals();
+});
+["fRounds", "fWarm", "fCool"].forEach(id => $(id).addEventListener("input", () => { readSteps(); renderTotals(); }));
+$("steps").addEventListener("click", e => {
+  const b = e.target.closest("[data-step]"); if (!b) return; readSteps();
+  const i = +b.closest(".step").dataset.i, a = draft.steps;
+  if (b.dataset.step === "del") a.splice(i, 1);
+  else { const j = b.dataset.step === "up" ? i - 1 : i + 1; [a[i], a[j]] = [a[j], a[i]]; }
+  renderSteps();
+});
+$("quick").innerHTML = ["walk", "jog", "run", "sprint", "work", "rest"].map(k => `<button type="button" data-add="${k}"><i style="background:${kc(k)}"></i>+ ${KINDS[k].name}</button>`).join("");
+$("quick").addEventListener("click", e => {
+  const b = e.target.closest("[data-add]"); if (!b) return; readSteps();
+  const k = b.dataset.add; draft.steps.push({ kind: k, label: "", secs: ["sprint", "work", "rest"].includes(k) ? 30 : 60 });
+  renderSteps(); $("sm" + (draft.steps.length - 1)).focus();
+});
+
+/* caption parser: "5 min walk, 5 min run x3" */
+const KIND_WORDS = [
+  ["warm", /warm/], ["cool", /cool/], ["sprint", /sprint|fast|all.?out|max/], ["run", /run/], ["jog", /jog|easy run/],
+  ["walk", /walk|incline|hike/], ["rest", /rest|recover|break|pause/], ["work", /work|hiit|burpee|squat|jump|row|bike|cycle|plank|push/],
+];
+function guessKind(t) { t = t.toLowerCase(); for (const [k, re] of KIND_WORDS) if (re.test(t)) return k; return "work"; }
+function parseRoutine(text) {
+  let rounds = 1;
+  const rm = text.match(/(?:\bx\s*(\d+)\b|\b(\d+)\s*x\b|(\d+)\s*(?:rounds?|sets?|times)|repeat\s*(\d+))/i);
+  if (rm) { rounds = +(rm[1] || rm[2] || rm[3] || rm[4]); text = text.replace(rm[0], " "); }
+  const parts = text.split(/[,\n;•|+]|\bthen\b|→|->|\band\b/i).map(s => s.trim()).filter(Boolean);
+  const steps = []; let warmup = 0, cooldown = 0;
+  const unit = "(min(?:ute)?s?|m|sec(?:ond)?s?|s|')\\b";
+  for (const p of parts) {
+    const m = p.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*${unit}`, "i")) || p.match(/(\d+(?:\.\d+)?)(?:\s*)$/);
+    if (!m) continue;
+    const n = parseFloat(m[1]); const u = (m[2] || "min").toLowerCase();
+    const secs = Math.round(/^s/.test(u) ? n : n * 60);
+    const words = p.replace(m[0], " ").replace(/\s+/g, " ").trim();
+    const kind = guessKind(words || "work");
+    if (kind === "warm") { warmup += secs; continue; }
+    if (kind === "cool") { cooldown += secs; continue; }
+    const generic = new RegExp(`^(${KINDS[kind].name}|${kind}|${kind}ning|${kind}ing)$`, "i");
+    steps.push({ kind, label: words && !generic.test(words) ? words.replace(/^(of|for)\s+/i, "").slice(0, 40) : "", secs });
+  }
+  return { steps, rounds, warmup, cooldown };
+}
+$("parseBtn").addEventListener("click", () => {
+  const r = parseRoutine($("fParse").value);
+  if (!r.steps.length) { $("parseErr").textContent = "No intervals found. Write each one with a time, like \"5 min walk\"."; return; }
+  $("parseErr").textContent = "";
+  readSteps(); draft.steps = r.steps; draft.rounds = r.rounds;
+  if (r.warmup) draft.warmup = r.warmup; if (r.cooldown) draft.cooldown = r.cooldown;
+  $("fRounds").value = draft.rounds; $("fWarm").value = +(draft.warmup / 60).toFixed(2); $("fCool").value = +(draft.cooldown / 60).toFixed(2);
+  renderSteps(); toast(`Added ${r.steps.length} interval${r.steps.length > 1 ? "s" : ""}${r.rounds > 1 ? `, ×${r.rounds}` : ""}`);
+});
+
+async function saveDraft() {
+  readSteps();
+  draft.steps = draft.steps.filter(s => s.secs > 0);
+  if (!draft.steps.length) { $("edErr").textContent = "Add at least one interval with a time above zero."; renderSteps(); return null; }
+  if (!draft.name.trim()) draft.name = summary(clean(draft)).slice(0, 60);
+  const w = { ...clean(draft), id: editingId || uid() };
+  try { await store.save(w); } catch (e) { $("edErr").textContent = "Couldn't save. Check your connection and try again."; return null; }
+  toast("Workout saved"); closeEditor(); return w;
+}
+$("edForm").addEventListener("submit", e => { e.preventDefault(); saveDraft(); });
+$("edCancel").addEventListener("click", closeEditor);
+$("edCancelTop").addEventListener("click", closeEditor);
+$("newBtn").addEventListener("click", () => openEditor(null));
+$("edDelete").addEventListener("click", async () => {
+  const b = $("edDelete");
+  if (!b.dataset.confirm) { b.dataset.confirm = "1"; b.textContent = "Tap again to delete"; return; }
+  try { await store.remove(editingId); toast("Workout deleted"); closeEditor(); } catch { $("edErr").textContent = "Couldn't delete. Try again."; }
+});
+
+/* ---------- player ---------- */
+const P = { w: null, plan: [], idx: 0, running: false, endAt: 0, left: 0, done: false, beep: true, voice: true, raf: 0, iv: 0, wake: null, lastBeep: -1 };
+let actx = null;
+function beep(freq = 880, dur = 0.15, vol = 0.25) {
+  if (!P.beep) return;
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {}
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === "suspended") actx.resume();
+    const o = actx.createOscillator(), g = actx.createGain(); const t = actx.currentTime;
+    o.type = "square"; o.frequency.value = freq; o.connect(g); g.connect(actx.destination);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.start(t); o.stop(t + dur + 0.02);
+  } catch {}
+}
+function say(text) {
+  if (!P.voice) return;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 1.05; speechSynthesis.speak(u); } catch {}
+}
+function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch {} }
+async function wakeOn() { try { if (navigator.wakeLock && !P.wake) { P.wake = await navigator.wakeLock.request("screen"); P.wake.addEventListener?.("release", () => P.wake = null); } } catch {} }
+function wakeOff() { try { P.wake?.release(); } catch {} P.wake = null; }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && P.running) wakeOn(); });
+
+function startPlayer(w) {
+  P.w = w; P.plan = expand(w); P.idx = 0; P.running = false; P.done = false; P.left = P.plan[0]?.secs || 0; P.lastBeep = -1;
+  $("pName").textContent = w.name; $("player").hidden = false; document.body.style.overflow = "hidden";
+  $("stage").classList.remove("finished");
+  drawPlayer();
+}
+function stopPlayer() {
+  P.running = false; clearInterval(P.iv); cancelAnimationFrame(P.raf); wakeOff();
+  try { speechSynthesis.cancel(); } catch {}
+  $("player").hidden = true; document.body.style.overflow = "";
+}
+function announce(i) {
+  const s = P.plan[i]; if (!s) return;
+  const n = P.plan[i + 1];
+  say(`${s.label}, ${fmtWords(s.secs)}`);
+  beep(1175, 0.35, 0.3); buzz([200, 80, 200]);
+}
+function play() {
+  if (P.done) { startPlayer(P.w); }
+  P.running = true; P.endAt = performance.now() + P.left * 1000;
+  // first press of a fresh step announces it
+  if (P.left === P.plan[P.idx].secs) announce(P.idx);
+  wakeOn(); loop();
+  clearInterval(P.iv); P.iv = setInterval(tick, 250);
+}
+function pause() { tick(); P.running = false; clearInterval(P.iv); cancelAnimationFrame(P.raf); wakeOff(); drawPlayer(); }
+function loop() { if (!P.running) return; tick(); P.raf = requestAnimationFrame(loop); }
+function tick() {
+  if (!P.running) return;
+  let now = performance.now();
+  P.left = (P.endAt - now) / 1000;
+  while (P.left <= 0) {
+    if (P.idx >= P.plan.length - 1) return finish();
+    const over = -P.left; P.idx++; P.lastBeep = -1;
+    P.endAt = now + (P.plan[P.idx].secs - over) * 1000; P.left = (P.endAt - now) / 1000;
+    announce(P.idx);
+  }
+  const whole = Math.ceil(P.left);
+  if (whole <= 3 && whole >= 1 && whole !== P.lastBeep && P.plan[P.idx].secs > 5) { P.lastBeep = whole; beep(660, 0.12); }
+  drawPlayer();
+}
+function finish() {
+  P.running = false; P.done = true; P.idx = P.plan.length - 1; P.left = 0; clearInterval(P.iv); cancelAnimationFrame(P.raf); wakeOff();
+  beep(988, 0.2); setTimeout(() => beep(1319, 0.5), 220); buzz([300, 100, 300, 100, 500]);
+  say("Workout complete. Nice work.");
+  drawPlayer();
+}
+function jump(d) {
+  const j = P.idx + d;
+  if (d < 0 && P.plan[P.idx].secs - P.left > 3) { /* back restarts current step first */ }
+  else if (j < 0 || j >= P.plan.length) { if (j >= P.plan.length) finish(); return; }
+  else P.idx = j;
+  P.done = false; $("stage").classList.remove("finished");
+  P.left = P.plan[P.idx].secs; P.lastBeep = -1;
+  if (P.running) { P.endAt = performance.now() + P.left * 1000; announce(P.idx); }
+  drawPlayer();
+}
+function drawPlayer() {
+  const s = P.plan[P.idx]; if (!s) return;
+  const st = $("stage"); st.style.setProperty("--kc", kc(s.kind));
+  $("pBar").parentElement.style.setProperty("--kc", kc(s.kind));
+  const rounds = P.w.rounds;
+  if (P.done) {
+    st.classList.add("finished");
+    $("pKind").textContent = "Done"; $("pClock").textContent = fmt(total(P.w)); $("pRound").textContent = "Workout complete";
+    $("pNext").innerHTML = "Total time"; $("pBar").style.width = "100%";
+  } else {
+    $("pKind").textContent = s.label;
+    $("pClock").textContent = fmt(Math.ceil(P.left));
+    $("pRound").textContent = s.round ? `Round ${s.round} of ${rounds} · Interval ${P.idx + 1} of ${P.plan.length}` : `Interval ${P.idx + 1} of ${P.plan.length}`;
+    const n = P.plan[P.idx + 1];
+    $("pNext").innerHTML = n ? `Next: <b>${esc(n.label)}</b> · ${fmtShort(n.secs)}` : "Last interval";
+    $("pBar").style.width = `${(1 - P.left / s.secs) * 100}%`;
+  }
+  const before = P.plan.slice(0, P.idx).reduce((a, x) => a + x.secs, 0);
+  const el = P.done ? total(P.w) : before + (s.secs - P.left);
+  $("pEl").textContent = fmt(el); $("pRem").textContent = fmt(total(P.w) - el);
+  $("pLane").innerHTML = laneHTML(P.plan, P.done ? P.plan.length : P.idx);
+  $("pPlay").textContent = P.done ? "Again" : P.running ? "Pause" : (el > 0 ? "Resume" : "Start");
+}
+$("pPlay").addEventListener("click", () => { P.running ? pause() : play(); });
+$("pNextBtn").addEventListener("click", () => jump(1));
+$("pPrev").addEventListener("click", () => jump(-1));
+$("pClose").addEventListener("click", stopPlayer);
+$("tBeep").addEventListener("click", e => { P.beep = !P.beep; e.currentTarget.setAttribute("aria-pressed", P.beep); });
+$("tVoice").addEventListener("click", e => { P.voice = !P.voice; e.currentTarget.setAttribute("aria-pressed", P.voice); if (!P.voice) try { speechSynthesis.cancel(); } catch {} });
+document.addEventListener("keydown", e => {
+  if ($("player").hidden) return;
+  if (e.code === "Space") { e.preventDefault(); $("pPlay").click(); }
+  else if (e.key === "ArrowRight") jump(1); else if (e.key === "ArrowLeft") jump(-1); else if (e.key === "Escape") stopPlayer();
+});
+
+$("exportBtn").addEventListener("click", () => {
+  if (!store.items.length) { toast("No saved workouts to back up yet"); return; }
+  const blob = new Blob([JSON.stringify({ app: "interval-keeper", version: 1, workouts: store.items }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `interval-keeper-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
+$("importFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text()); const list = Array.isArray(data) ? data : data.workouts;
+    if (!Array.isArray(list)) throw 0;
+    let n = 0;
+    for (const w of list) { if (!Array.isArray(w?.steps)) continue; await store.save({ ...clean(w), id: w.id || uid(), updated: w.updated }); n++; }
+    toast(n ? `Restored ${n} workout${n > 1 ? "s" : ""}` : "No workouts found in that file");
+  } catch { toast("That file isn't an Interval Keeper backup"); }
+});
+
+renderLibrary();
+store.init();
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+})();
+</script>
+</body>
+</html>
