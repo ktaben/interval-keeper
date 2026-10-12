@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS subs (
+  id TEXT PRIMARY KEY,
+  sub TEXT NOT NULL,
+  settings TEXT NOT NULL,
+  last_ack INTEGER DEFAULT 0,
+  last_sent INTEGER DEFAULT 0,
+  paused_until INTEGER DEFAULT 0,
+  created INTEGER NOT NULL
+);

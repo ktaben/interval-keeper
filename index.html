@@ -236,6 +236,33 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 .nowplaying .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }
 .mini { font-size: .78rem; color: var(--muted); }
 @media (max-width: 560px) { .kpi.main .v { font-size: 2.4rem; } .kpi .v { font-size: 1.6rem; } }
+
+/* fit bites */
+.today { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+.today .v { font: 500 2.6rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.today .l { color: var(--muted); font-size: .9rem; }
+.bites { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bite { text-align: left; display: grid; gap: 6px; padding: 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); align-content: start; }
+.bite:hover { border-color: var(--accent); }
+.bite .bn { font: 600 1.1rem/1.1 var(--display); letter-spacing: .01em; }
+.bite .bm { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted); font-weight: 500; }
+.bite .lane { height: 3px; }
+.bite-edit { font-size: .75rem; color: var(--muted); background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+.rem { display: grid; gap: 14px; }
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.switch input { width: 46px; height: 28px; appearance: none; -webkit-appearance: none; background: var(--surface-2); border-radius: 14px; position: relative; cursor: pointer; border: 0; padding: 0; transition: background .15s; flex-shrink: 0; }
+.switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .25); transition: transform .15s; }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(18px); }
+.rem-row { display: flex; gap: 10px 14px; flex-wrap: wrap; align-items: center; font-size: .88rem; }
+.rem-row select, .rem-row input[type=time] { padding: 7px 8px; }
+.daychips { display: flex; gap: 4px; }
+.daychips button { width: 34px; height: 34px; padding: 0; justify-content: center; border-radius: 50%; font-size: .78rem; }
+.daychips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.rem-status { font-size: .85rem; color: var(--muted); }
+.rem-status b { color: var(--fg); }
+.rem-note { font-size: .82rem; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.check { display: flex; gap: 8px; align-items: center; font-size: .88rem; font-weight: 500; }
 </style>
 </head>
 <body>
@@ -247,6 +274,7 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
   </header>
   <nav class="tabs" id="tabs" aria-label="Sections">
     <button data-tab="library" aria-pressed="true">Workouts</button>
+    <button data-tab="bites" aria-pressed="false">Fit Bites</button>
     <button data-tab="progress" aria-pressed="false">Progress</button>
   </nav>
 
@@ -268,6 +296,31 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 
     </div>
     <div class="list" id="tplList"></div>
+  </section>
+
+  <!-- FIT BITES -->
+  <section id="bites" hidden>
+    <div class="today"><span class="v" id="bToday">0</span><span class="l" id="bTodayL">bites today</span></div>
+
+    <div class="section-head"><h2>Pick a bite</h2><button class="linkish" id="newBite">+ New bite</button></div>
+    <div class="bites" id="biteGrid"></div>
+
+    <div class="section-head" style="margin-top:40px"><h2>Break reminders</h2></div>
+    <div class="rem" id="rem">
+      <div class="switch"><label for="rOn" style="font-weight:600">Remind me to take a break</label><input type="checkbox" id="rOn" role="switch"></div>
+      <div id="rSettings" class="rem">
+        <div class="rem-row">
+          <label for="rEvery">Every</label>
+          <select id="rEvery"><option value="30">30 min</option><option value="45">45 min</option><option value="50" selected>50 min</option><option value="60">60 min</option><option value="90">90 min</option></select>
+          <label for="rStart">from</label><input type="time" id="rStart" value="09:00">
+          <label for="rEnd">to</label><input type="time" id="rEnd" value="18:00">
+        </div>
+        <div class="daychips" id="rDays" aria-label="Days"></div>
+        <div class="rem-status" id="rStatus"></div>
+        <div class="rem-row"><button id="rPause">Pause 1 hour</button><button id="rTest">Send a test</button></div>
+      </div>
+      <div class="rem-note" id="rNote" hidden></div>
+    </div>
   </section>
 
   <!-- PROGRESS -->
@@ -316,6 +369,8 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
           </select>
         </label>
       </div>
+
+      <label class="check"><input type="checkbox" id="fBite"> Fit Bite (a short break workout)</label>
 
       <details class="more" id="pasteBox">
         <summary>Paste from a caption</summary>
@@ -468,7 +523,7 @@ function clean(w) {
     name: String(w.name || "Untitled workout").slice(0, 80), type: String(w.type || "Other"), notes: String(w.notes || "").slice(0, 500),
     warmup: Math.max(0, +w.warmup || 0), cooldown: Math.max(0, +w.cooldown || 0), rounds: Math.min(50, Math.max(1, Math.round(+w.rounds || 1))),
     steps: (Array.isArray(w.steps) ? w.steps : []).map(s => ({ kind: KINDS[s.kind] ? s.kind : "work", label: String(s.label || "").slice(0, 40), secs: Math.max(0, Math.round(+s.secs || 0)) })),
-    updated: +w.updated || Date.now(),
+    updated: +w.updated || Date.now(), bite: !!w.bite,
   };
 }
 
@@ -482,6 +537,17 @@ const TEMPLATES = [
   { id: "tpl-12330", name: "Treadmill pyramid", type: "Treadmill", warmup: 180, cooldown: 180, rounds: 2,
     steps: [{ kind: "walk", label: "Incline walk", secs: 120 }, { kind: "jog", secs: 120 }, { kind: "run", secs: 60 }, { kind: "sprint", secs: 30 }, { kind: "walk", label: "Recover", secs: 90 }], notes: "" },
 ].map(t => ({ ...clean(t), id: t.id }));
+
+const BITE_TEMPLATES = [
+  { id: "bite-walk",    name: "10-min walk",      type: "Walk / Run", rounds: 1, steps: [{ kind: "walk", secs: 600 }] },
+  { id: "bite-squats",  name: "2-min squats",     type: "Strength circuit", rounds: 2, steps: [{ kind: "work", label: "Squats", secs: 40 }, { kind: "rest", secs: 20 }] },
+  { id: "bite-plank",   name: "1-min plank",      type: "Strength circuit", rounds: 1, steps: [{ kind: "work", label: "Plank", secs: 60 }] },
+  { id: "bite-stairs",  name: "3-min stairs",     type: "Other", rounds: 1, steps: [{ kind: "run", label: "Stairs", secs: 180 }] },
+  { id: "bite-stretch", name: "5-min stretch",    type: "Other", rounds: 1, steps: [{ kind: "cool", label: "Stretch", secs: 300 }] },
+  { id: "bite-pushups", name: "Wall push-ups",    type: "Strength circuit", rounds: 3, steps: [{ kind: "work", label: "Wall push-ups", secs: 30 }, { kind: "rest", secs: 10 }] },
+  { id: "bite-desk",    name: "Desk mobility",    type: "Other", rounds: 1, steps: [{ kind: "work", label: "Neck and shoulders", secs: 60 }, { kind: "work", label: "Hip openers", secs: 60 }, { kind: "work", label: "Back twist", secs: 60 }, { kind: "work", label: "Calf raises", secs: 60 }] },
+  { id: "bite-dance",   name: "5-min dance",      type: "Other", rounds: 1, steps: [{ kind: "sprint", label: "Dance", secs: 300 }] },
+].map(t => ({ ...clean({ ...t, bite: true }), id: t.id }));
 
 /* ---------- storage: per-person db, with browser storage fallback ---------- */
 const LS_KEY = "interval-keeper.workouts";
@@ -518,7 +584,8 @@ function cardHTML(w, isTpl) {
   </article>`;
 }
 function renderLibrary() {
-  const mine = [...store.items].sort((a, b) => b.updated - a.updated);
+  renderBites();
+  const mine = store.items.filter(w => !w.bite).sort((a, b) => b.updated - a.updated);
   $("myList").innerHTML = mine.length ? mine.map(w => cardHTML(w, false)).join("")
     : `<div class="empty">Nothing saved yet. Tap <b>+ New</b>, or copy a template.</div>`;
   $("tplList").innerHTML = TEMPLATES.map(w => cardHTML(w, true)).join("");
@@ -541,12 +608,12 @@ function openEditor(w) {
   editingId = w?.id || null;
   draft = JSON.parse(JSON.stringify(w ? { ...w, steps: w.steps.map(s => ({ ...s })) } : blank()));
   $("edTitle").textContent = editingId ? "Edit workout" : "New workout";
-  $("fName").value = draft.name; $("fType").value = draft.type; $("fNotes").value = draft.notes || "";
+  $("fName").value = draft.name; $("fType").value = draft.type; $("fNotes").value = draft.notes || ""; $("fBite").checked = !!draft.bite;
   $("fRounds").value = draft.rounds; $("fWarm").value = +(draft.warmup / 60).toFixed(2); $("fCool").value = +(draft.cooldown / 60).toFixed(2);
   $("fParse").value = ""; $("parseErr").textContent = ""; $("edErr").textContent = "";
   $("pasteBox").open = false; $("extras").open = !!(draft.warmup || draft.cooldown || draft.notes);
   $("edDelete").hidden = !editingId; delete $("edDelete").dataset.confirm; $("edDelete").textContent = "Delete";
-  $("library").hidden = true; $("progress").hidden = true; $("tabs").hidden = true; $("editor").hidden = false; $("newBtn").hidden = true;
+  $("library").hidden = true; $("progress").hidden = true; $("bites").hidden = true; $("tabs").hidden = true; $("editor").hidden = false; $("newBtn").hidden = true;
   renderSteps(); window.scrollTo(0, 0);
 }
 function closeEditor() { $("editor").hidden = true; $("tabs").hidden = false; $("newBtn").hidden = false; showTab(tab); window.scrollTo(0, 0); }
@@ -572,7 +639,7 @@ function readSteps() {
     s.kind = $("sk" + i).value; s.label = $("sl" + i).value;
     s.secs = Math.max(0, (parseInt($("sm" + i).value) || 0) * 60 + Math.min(59, parseInt($("ss" + i).value) || 0));
   });
-  draft.name = $("fName").value; draft.type = $("fType").value; draft.notes = $("fNotes").value;
+  draft.name = $("fName").value; draft.type = $("fType").value; draft.notes = $("fNotes").value; draft.bite = $("fBite").checked;
   draft.rounds = Math.max(1, parseInt($("fRounds").value) || 1);
   draft.warmup = Math.round((parseFloat($("fWarm").value) || 0) * 60); draft.cooldown = Math.round((parseFloat($("fCool").value) || 0) * 60);
 }
@@ -697,7 +764,7 @@ function startPlayer(w) {
 }
 function stopPlayer() {
   stopClock();
-  if (!P.done && !P.logged && P.active >= 60000) logSession(false);
+  if (!P.done && !P.logged && P.active >= 60000) { logSession(false); Rem.ack(); }
   P.running = false; clearInterval(P.iv); cancelAnimationFrame(P.raf); wakeOff();
   try { speechSynthesis.cancel(); } catch {}
   $("player").hidden = true; $("musicSheet").hidden = true; document.body.style.overflow = "";
@@ -740,7 +807,8 @@ function finish() {
   P.running = false; P.done = true; P.idx = P.plan.length - 1; P.left = 0; clearInterval(P.iv); cancelAnimationFrame(P.raf); wakeOff();
   beep(988, 0.2); setTimeout(() => beep(1319, 0.5), 220); buzz([300, 100, 300, 100, 500]);
   say("Workout complete. Nice work.");
-  const fresh = P.logged || P.active < 60000 ? null : logSession(true);
+  const fresh = P.logged || P.active < 20000 ? null : logSession(true);
+  if (fresh) Rem.ack();
   drawPlayer(); showFinish(fresh);
 }
 function jump(d) {
@@ -813,8 +881,10 @@ let tab = "library";
 function showTab(t) {
   tab = t;
   for (const b of $("tabs").children) b.setAttribute("aria-pressed", b.dataset.tab === t);
-  $("library").hidden = t !== "library"; $("progress").hidden = t !== "progress";
+  $("library").hidden = t !== "library"; $("progress").hidden = t !== "progress"; $("bites").hidden = t !== "bites";
+  $("newBtn").hidden = t === "bites";
   if (t === "progress") renderProgress();
+  if (t === "bites") { renderBites(); Rem.render(); Rem.refresh(); }
   try { localStorage.setItem("interval-keeper.tab", t); } catch {}
 }
 $("tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (b) showTab(b.dataset.tab); });
@@ -832,7 +902,7 @@ const H = {
     let n = 0;
     if (Array.isArray(list)) for (const x of list) {
       if (!x || !x.id || !(+x.start) || !(+x.secs) || this.list.some(y => y.id === x.id)) continue;
-      this.list.push({ id: String(x.id), name: String(x.name || "Workout").slice(0, 80), type: String(x.type || ""), start: +x.start, secs: Math.round(+x.secs), completed: !!x.completed }); n++;
+      this.list.push({ id: String(x.id), name: String(x.name || "Workout").slice(0, 80), type: String(x.type || ""), start: +x.start, secs: Math.round(+x.secs), completed: !!x.completed, bite: !!x.bite }); n++;
     }
     if (badges && typeof badges === "object") for (const [k, v] of Object.entries(badges)) if (BADGES.some(b => b.id === k) && !this.badges[k]) this.badges[k] = +v || Date.now();
     this.list.sort((a, b) => a.start - b.start); awardBadges(); this.write();
@@ -842,7 +912,7 @@ const H = {
 };
 function logSession(completed) {
   const secs = Math.round(P.active / 1000);
-  H.list.push({ id: uid(), name: P.w.name, type: P.w.type, start: P.startedAt || Date.now() - P.active, secs, completed });
+  H.list.push({ id: uid(), name: P.w.name, type: P.w.type, start: P.startedAt || Date.now() - P.active, secs, completed, bite: !!P.w.bite });
   P.logged = true;
   const fresh = awardBadges(); H.write();
   if (!completed) toast(`Saved ${fmtDur(secs)} to your progress`);
@@ -886,6 +956,8 @@ const BADGES = [
   { id: "early",   g: "AM",   c: "--k-warm",   n: "Early bird",      d: "Start a workout before 7 am",     p: s => [s.early ? 1 : 0, 1] },
   { id: "night",   g: "PM",   c: "--k-cool",   n: "Night owl",       d: "Start a workout after 9 pm",      p: s => [s.night ? 1 : 0, 1] },
   { id: "weekend", g: "S+S",  c: "--k-work",   n: "Weekend warrior", d: "Work out Saturday and Sunday",    p: s => [s.weekend ? 1 : 0, 1] },
+  { id: "sweet",   g: "5×",   c: "--k-sprint", n: "Sweet tooth",     d: "5 Fit Bites in one day",          p: s => [s.bestBiteDay, 5] },
+  { id: "bites25", g: "25b",  c: "--k-warm",   n: "Bite collector",  d: "25 Fit Bites in total",           p: s => [s.bites, 25] },
 ];
 function badgeStats() {
   const st = streaks();
@@ -896,6 +968,8 @@ function badgeStats() {
     total: H.list.reduce((a, x) => a + x.secs, 0), longest: Math.max(0, ...H.list.map(x => x.secs)),
     early: H.list.some(x => new Date(x.start).getHours() < 7), night: H.list.some(x => new Date(x.start).getHours() >= 21),
     weekend: [...sat].some(t => sun.has(t)),
+    bites: H.list.filter(x => x.bite).length,
+    bestBiteDay: Math.max(0, ...Object.values(H.list.filter(x => x.bite).reduce((m, x) => { const k = dayKey(x.start); m[k] = (m[k] || 0) + 1; return m; }, {}))),
   };
 }
 function awardBadges() {
@@ -913,7 +987,7 @@ function badgeHTML(b, s) {
   </div>`;
 }
 function showFinish(fresh) {
-  if (!fresh) { $("pFin").innerHTML = "<div>Workouts under 1 minute aren't saved to your progress</div>"; $("pFin").hidden = false; return; }
+  if (!fresh) { $("pFin").innerHTML = "<div>Workouts under 20 seconds aren't saved to your progress</div>"; $("pFin").hidden = false; return; }
   const wk = startOfWeek(new Date()).getTime();
   const weekSecs = H.list.filter(x => x.start >= wk).reduce((a, x) => a + x.secs, 0);
   const s = badgeStats();
@@ -980,7 +1054,7 @@ function renderProgress() {
 
   const recent = [...H.list].sort((a, b) => b.start - a.start).slice(0, 30);
   $("histList").innerHTML = recent.length ? recent.map(x => `<article class="wcard" data-h="${esc(x.id)}"><div class="row1"><div style="min-width:0">
-      <h3 style="font-size:1.05rem">${esc(x.name)}${x.completed ? "" : '<span class="tag">Ended early</span>'}</h3>
+      <h3 style="font-size:1.05rem">${esc(x.name)}${x.bite ? '<span class="tag">Bite</span>' : ""}${x.completed ? "" : '<span class="tag">Ended early</span>'}</h3>
       <div class="when">${new Date(x.start).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div></div>
       <div class="side"><span class="time mono">${fmtDur(x.secs)}</span><button class="linkish" data-hdel aria-label="Remove this session">✕</button></div></div></article>`).join("")
     : `<div class="empty">Finish a workout and it shows up here.</div>`;
@@ -1034,7 +1108,112 @@ $("msClose").addEventListener("click", () => { $("musicSheet").hidden = true; })
 H.load(); if (awardBadges().length) H.write();
 renderLibrary();
 store.init();
-try { if (localStorage.getItem("interval-keeper.tab") === "progress") showTab("progress"); } catch {}
+/* ---------- fit bites ---------- */
+function renderBites() {
+  const mine = store.items.filter(w => w.bite).sort((a, b) => b.updated - a.updated);
+  const tile = (w, own) => `<button class="bite" data-bite="${esc(w.id)}" aria-label="Start ${esc(w.name)}">
+      <span class="bn">${esc(w.name)}</span>
+      <span class="lane">${laneHTML(expand(w))}</span>
+      <span class="bm"><span class="mono">${fmt(total(w))}</span>${own ? `<span class="bite-edit" data-bedit="${esc(w.id)}">Edit</span>` : "<span>▶</span>"}</span>
+    </button>`;
+  $("biteGrid").innerHTML = mine.map(w => tile(w, true)).join("") + BITE_TEMPLATES.map(w => tile(w, false)).join("");
+  const today = startOfDay(new Date()).getTime();
+  const t = H.list.filter(x => x.bite && x.start >= today);
+  $("bToday").textContent = t.length;
+  $("bTodayL").textContent = `${t.length === 1 ? "bite" : "bites"} today${t.length ? " · " + fmtDur(t.reduce((a, x) => a + x.secs, 0)) : ""}`;
+}
+$("biteGrid").addEventListener("click", e => {
+  const ed = e.target.closest("[data-bedit]");
+  if (ed) { const w = store.items.find(x => x.id === ed.dataset.bedit); if (w) openEditor(w); return; }
+  const b = e.target.closest("[data-bite]"); if (!b) return;
+  const w = store.items.find(x => x.id === b.dataset.bite) || BITE_TEMPLATES.find(x => x.id === b.dataset.bite);
+  if (w) startPlayer(w);
+});
+$("newBite").addEventListener("click", () => openEditor({ name: "", type: "Other", warmup: 0, cooldown: 0, rounds: 1, notes: "", bite: true,
+  steps: [{ kind: "work", label: "", secs: 40 }, { kind: "rest", label: "", secs: 20 }] }));
+
+/* ---------- break reminders (push) ---------- */
+const PUSH_API = "";
+const VAPID_PUBLIC = "BJiVnOiIogK-Q5k38GRyaWNbJctJ_0ZFo3vfn3zfvt52Mhgx3EvicNFjHNqCsM1Unx_5MCWh3HGcC3urUNRIPmo";
+const R_KEY = "interval-keeper.reminders";
+const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
+const Rem = {
+  st: { id: "", on: false, every: 50, start: "09:00", end: "18:00", days: [1, 2, 3, 4, 5] }, nextAt: null, pausedUntil: 0,
+  load() { try { Object.assign(this.st, JSON.parse(localStorage.getItem(R_KEY) || "{}")); } catch {} },
+  save() { try { localStorage.setItem(R_KEY, JSON.stringify(this.st)); } catch {} },
+  settings() { return { on: this.st.on, every: this.st.every, start: this.st.start, end: this.st.end, days: this.st.days, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }; },
+  supported() { return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window; },
+  isIOS() { return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); },
+  standalone() { return navigator.standalone === true || matchMedia("(display-mode: standalone)").matches; },
+  note(msg) { $("rNote").textContent = msg || ""; $("rNote").hidden = !msg; },
+  async api(path, body) {
+    const res = await fetch(PUSH_API + path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 404 && data.error === "Unknown device") { this.st.id = ""; this.st.on = false; this.save(); throw new Error("gone"); }
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    return data;
+  },
+  apply(d) { if (d && "nextAt" in d) { this.nextAt = d.nextAt; this.pausedUntil = d.pausedUntil || 0; } this.render(); },
+  render() {
+    $("rOn").checked = this.st.on; $("rSettings").hidden = !this.st.on;
+    $("rEvery").value = String(this.st.every); $("rStart").value = this.st.start; $("rEnd").value = this.st.end;
+    $("rDays").innerHTML = DAY_LETTERS.map((l, i) => `<button type="button" data-day="${i}" aria-pressed="${this.st.days.includes(i)}" aria-label="${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][i]}">${l}</button>`).join("");
+    const time = t => new Date(t).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    let msg;
+    if (this.pausedUntil > Date.now()) msg = `Paused until <b>${time(this.pausedUntil)}</b>`;
+    else if (this.nextAt) msg = `Next reminder around <b>${time(this.nextAt)}</b>. Finishing a bite restarts the clock.`;
+    else msg = "No more reminders today. They start again at your next working hours.";
+    $("rStatus").innerHTML = msg;
+    $("rPause").textContent = this.pausedUntil > Date.now() ? "Resume" : "Pause 1 hour";
+    if (!PUSH_API) this.note("Break reminders are almost ready. They switch on once the reminder server is connected.");
+    else if (!this.supported() && this.isIOS() && !this.standalone()) this.note("On iPhone, reminders only work from the Home Screen app. In Safari tap Share, then Add to Home Screen, and open Fit Bites from there.");
+    else if (!this.supported()) this.note("This browser can't receive reminders. Try Safari on iPhone (from the Home Screen) or Chrome on a computer.");
+    else if (Notification.permission === "denied") this.note("Notifications are blocked for this app. Turn them on in Settings, then Notifications, then Interval Keeper.");
+    else this.note("");
+    $("rOn").disabled = !PUSH_API || !this.supported();
+  },
+  async enable() {
+    if (Notification.permission !== "granted" && (await Notification.requestPermission()) !== "granted") { this.st.on = false; this.render(); return; }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: VAPID_PUBLIC });
+    this.st.on = true;
+    const d = await this.api("/subscribe", { id: this.st.id, subscription: sub.toJSON(), settings: this.settings() });
+    this.st.id = d.id; this.save(); this.apply(d); toast("Break reminders on");
+  },
+  async push() {
+    this.save();
+    if (!this.st.id) return this.st.on ? this.enable() : this.render();
+    try { this.apply(await this.api("/settings", { id: this.st.id, settings: this.settings() })); }
+    catch (e) { if (e.message === "gone" && this.st.on) return this.enable(); toast("Couldn't update reminders. Check your connection."); }
+  },
+  async refresh() { if (!PUSH_API || !this.st.id) return; try { this.apply(await this.api("/status?id=" + this.st.id)); } catch {} },
+  async ack() { if (!PUSH_API || !this.st.id || !this.st.on) return; try { this.apply(await this.api("/ack", { id: this.st.id })); } catch {} },
+};
+$("rOn").addEventListener("change", async e => {
+  Rem.st.on = e.target.checked; Rem.render();
+  try { await Rem.push(); } catch { Rem.st.on = false; Rem.save(); Rem.render(); toast("Couldn't turn on reminders. Try again."); }
+});
+$("rEvery").addEventListener("change", e => { Rem.st.every = +e.target.value; Rem.push(); });
+$("rStart").addEventListener("change", e => { if (e.target.value) { Rem.st.start = e.target.value; Rem.push(); } });
+$("rEnd").addEventListener("change", e => { if (e.target.value) { Rem.st.end = e.target.value; Rem.push(); } });
+$("rDays").addEventListener("click", e => {
+  const b = e.target.closest("[data-day]"); if (!b) return; const d = +b.dataset.day;
+  Rem.st.days = Rem.st.days.includes(d) ? Rem.st.days.filter(x => x !== d) : [...Rem.st.days, d].sort(); Rem.push();
+});
+$("rPause").addEventListener("click", async () => {
+  try { Rem.apply(await Rem.api("/pause", { id: Rem.st.id, minutes: Rem.pausedUntil > Date.now() ? 0 : 60 })); } catch { toast("Couldn't reach the reminder server"); }
+});
+$("rTest").addEventListener("click", async () => {
+  try { const d = await Rem.api("/test", { id: Rem.st.id }); toast(d.result === "sent" ? "Test sent. It should arrive in a few seconds." : "The test didn't go through. Try turning reminders off and on."); }
+  catch { toast("Couldn't reach the reminder server"); }
+});
+Rem.load();
+
+try {
+  const start = location.hash === "#bites" ? "bites" : localStorage.getItem("interval-keeper.tab");
+  if (start === "progress" || start === "bites") showTab(start);
+} catch {}
+window.addEventListener("hashchange", () => { if (location.hash === "#bites" && $("editor").hidden) showTab("bites"); });
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
 </script>
