@@ -271,20 +271,20 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 <div class="wrap" id="app">
   <header class="top">
     <h1>Interval Keeper</h1>
-    <button class="primary" id="newBtn">+ New</button>
   </header>
   <nav class="tabs" id="tabs" aria-label="Sections">
-    <button data-tab="library" aria-pressed="true">Workouts</button>
-    <button data-tab="bites" aria-pressed="false">Mini Move Cakes</button>
+    <button data-tab="bites" aria-pressed="true">Mini Move Cakes</button>
+    <button data-tab="library" aria-pressed="false">My Workouts</button>
     <button data-tab="progress" aria-pressed="false">Progress</button>
   </nav>
 
   <!-- LIBRARY -->
-  <section id="library">
+  <section id="library" hidden>
     <div class="section-head">
       <h2>My workouts</h2>
-      <span class="storage-note" id="storageNote"></span>
+      <button class="primary" id="newBtn">+ New workout</button>
     </div>
+    <span class="storage-note" id="storageNote" hidden></span>
     <div class="list" id="myList"></div>
     <div class="backup">
       <button class="linkish" id="exportBtn">Back up workouts</button>
@@ -292,15 +292,10 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
 
-    <div class="section-head" style="margin-top:36px">
-      <h2>Templates</h2>
-
-    </div>
-    <div class="list" id="tplList"></div>
   </section>
 
   <!-- MINI MOVE CAKES (internally "bites") -->
-  <section id="bites" hidden>
+  <section id="bites">
     <div class="today"><span class="v" id="bToday">0</span><span class="l" id="bTodayL">Mini Move Cakes today</span></div>
 
     <div class="section-head"><h2>Pick a cake</h2><button class="linkish" id="newBite">+ New cake</button></div>
@@ -529,17 +524,6 @@ function clean(w) {
   };
 }
 
-const TEMPLATES = [
-  { id: "tpl-walkrun", name: "Walk 5 / Run 5", type: "Walk / Run", warmup: 0, cooldown: 0, rounds: 3,
-    steps: [{ kind: "walk", secs: 300 }, { kind: "run", secs: 300 }], notes: "The classic reel format. Easy pace on the runs." },
-  { id: "tpl-c25k", name: "Beginner run-walk", type: "Running", warmup: 300, cooldown: 300, rounds: 8,
-    steps: [{ kind: "jog", secs: 60 }, { kind: "walk", secs: 90 }], notes: "Couch-to-5K style first week." },
-  { id: "tpl-tabata", name: "Tabata", type: "HIIT", warmup: 120, cooldown: 0, rounds: 8,
-    steps: [{ kind: "work", label: "All out", secs: 20 }, { kind: "rest", secs: 10 }], notes: "" },
-  { id: "tpl-12330", name: "Treadmill pyramid", type: "Treadmill", warmup: 180, cooldown: 180, rounds: 2,
-    steps: [{ kind: "walk", label: "Incline walk", secs: 120 }, { kind: "jog", secs: 120 }, { kind: "run", secs: 60 }, { kind: "sprint", secs: 30 }, { kind: "walk", label: "Recover", secs: 90 }], notes: "" },
-].map(t => ({ ...clean(t), id: t.id }));
-
 const BITE_TEMPLATES = [
   { id: "bite-plank",   name: "Plancake",           sub: "1-min plank",         type: "Strength circuit", rounds: 1, steps: [{ kind: "work", label: "Plank", secs: 60 }] },
   { id: "bite-squats",  name: "Squat Cupcake",      sub: "2-min squats",        type: "Strength circuit", rounds: 2, steps: [{ kind: "work", label: "Squats", secs: 40 }, { kind: "rest", secs: 20 }] },
@@ -591,13 +575,12 @@ function renderLibrary() {
   renderBites();
   const mine = store.items.filter(w => !w.bite).sort((a, b) => b.updated - a.updated);
   $("myList").innerHTML = mine.length ? mine.map(w => cardHTML(w, false)).join("")
-    : `<div class="empty">Nothing saved yet. Tap <b>+ New</b>, or copy a template.</div>`;
-  $("tplList").innerHTML = TEMPLATES.map(w => cardHTML(w, true)).join("");
+    : `<div class="empty">No workouts yet. Tap <b>+ New workout</b> to build your own intervals, or paste a routine from a reel.</div>`;
 }
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const card = b.closest(".wcard"); const isTpl = !!card.dataset.tpl;
-  const w = (isTpl ? TEMPLATES : store.items).find(x => x.id === card.dataset.id); if (!w) return;
+  const w = store.items.find(x => x.id === card.dataset.id); if (!w) return;
   const act = b.dataset.act;
   if (act === "run") startPlayer(w);
   else if (act === "edit") openEditor(w);
@@ -881,12 +864,11 @@ $("importFile").addEventListener("change", async e => {
 });
 
 /* ---------- tabs ---------- */
-let tab = "library";
+let tab = "bites";
 function showTab(t) {
   tab = t;
   for (const b of $("tabs").children) b.setAttribute("aria-pressed", b.dataset.tab === t);
   $("library").hidden = t !== "library"; $("progress").hidden = t !== "progress"; $("bites").hidden = t !== "bites";
-  $("newBtn").hidden = t === "bites";
   if (t === "progress") renderProgress();
   if (t === "bites") { renderBites(); Rem.render(); Rem.refresh(); }
   try { localStorage.setItem("interval-keeper.tab", t); } catch {}
@@ -1215,8 +1197,8 @@ $("rTest").addEventListener("click", async () => {
 Rem.load();
 
 try {
-  const start = location.hash === "#bites" ? "bites" : localStorage.getItem("interval-keeper.tab");
-  if (start === "progress" || start === "bites") showTab(start);
+  const saved = localStorage.getItem("interval-keeper.tab");
+  showTab(location.hash === "#bites" ? "bites" : ["bites", "library", "progress"].includes(saved) ? saved : "bites");
 } catch {}
 window.addEventListener("hashchange", () => { if (location.hash === "#bites" && $("editor").hidden) showTab("bites"); });
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
