@@ -1,12 +1,12 @@
-// Fit Bites break reminders: stores push subscriptions in D1 and, once a minute,
+// Mini Move Cakes break reminders: stores push subscriptions in D1 and, once a minute,
 // sends a reminder to anyone whose break is due within their working hours.
 import { buildPushHTTPRequest } from "@pushforge/builder";
 
 const ORIGINS = ["https://ktaben.github.io", "http://localhost:8765"];
 const CONTACT = "https://ktaben.github.io/interval-keeper/";
 const BITES = [
-  "2-min squats", "a 10-min walk", "1-min plank", "3 min of stairs", "a 5-min stretch",
-  "2-min wall push-ups", "4-min desk mobility", "a 5-min dance break",
+  "a Plancake (1-min plank)", "a Squat Cupcake (2-min squats)", "a Pound Cake (10-min walk)", "Shortcake Stairs (3 min)",
+  "a Lava Lunge Cake (2-min lunges)", "a Layer Cake (4-min desk mobility)", "a Crunch Cake (2-min crunches)", "an Angel Food Stretch (5 min)", "a Cha-cha Cheesecake (5-min dance)",
 ];
 
 const DEFAULTS = { on: true, every: 50, start: "09:00", end: "18:00", days: [1, 2, 3, 4, 5], tz: "UTC" };
@@ -69,7 +69,7 @@ async function sendOnce(env, row, payload) {
 
 function reminder(every) {
   const bite = BITES[Math.floor(Math.random() * BITES.length)];
-  return { title: "Time for a Fit Bite", body: `${every} minutes since your last break. How about ${bite}?`, url: "./#bites" };
+  return { title: "Time for a Mini Move Cake 🍰", body: `${every} minutes since your last break. Craving something sweet? Try ${bite}.`, url: "./#bites" };
 }
 
 async function runReminders(env) {
@@ -137,7 +137,7 @@ async function handle(req, env) {
     await env.DB.prepare("UPDATE subs SET paused_until = ? WHERE id = ?").bind(m ? now + m * 60000 : 0, id).run();
   } else if (url.pathname === "/test") {
     const row = await env.DB.prepare("SELECT * FROM subs WHERE id = ?").bind(id).first();
-    const result = await send(env, row, { title: "Fit Bites", body: "Reminders are on. This is what a break reminder looks like.", url: "./#bites" });
+    const result = await send(env, row, { title: "Mini Move Cakes", body: "Reminders are on. This is what a break reminder looks like.", url: "./#bites" });
     return json(req, { result });
   } else if (url.pathname === "/unsubscribe") {
     await env.DB.prepare("DELETE FROM subs WHERE id = ?").bind(id).run();

@@ -1,5 +1,5 @@
 // Offline support: app files are cached on install; fonts are cached the first time they load.
-const CACHE = "interval-keeper-v3";
+const CACHE = "interval-keeper-v4";
 const APP = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
@@ -34,11 +34,11 @@ self.addEventListener("fetch", e => {
   }
 });
 
-// Break reminders sent by the Fit Bites push server.
+// Break reminders sent by the Mini Move Cakes push server.
 self.addEventListener("push", e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
-  e.waitUntil(self.registration.showNotification(d.title || "Time for a Fit Bite", {
+  e.waitUntil(self.registration.showNotification(d.title || "Time for a Mini Move Cake", {
     body: d.body || "Time to get up and move for a couple of minutes.",
     icon: "icons/icon-192.png",
     badge: "icons/icon-192.png",

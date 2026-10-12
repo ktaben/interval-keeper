@@ -247,6 +247,7 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 .bite .bn { font: 600 1.1rem/1.1 var(--display); letter-spacing: .01em; }
 .bite .bm { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted); font-weight: 500; }
 .bite .lane { height: 3px; }
+.bite .bs { font-size: .78rem; color: var(--muted); margin-top: -3px; }
 .bite-edit { font-size: .75rem; color: var(--muted); background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
 .rem { display: grid; gap: 14px; }
 .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -274,7 +275,7 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
   </header>
   <nav class="tabs" id="tabs" aria-label="Sections">
     <button data-tab="library" aria-pressed="true">Workouts</button>
-    <button data-tab="bites" aria-pressed="false">Fit Bites</button>
+    <button data-tab="bites" aria-pressed="false">Mini Move Cakes</button>
     <button data-tab="progress" aria-pressed="false">Progress</button>
   </nav>
 
@@ -298,11 +299,12 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
     <div class="list" id="tplList"></div>
   </section>
 
-  <!-- FIT BITES -->
+  <!-- MINI MOVE CAKES (internally "bites") -->
   <section id="bites" hidden>
-    <div class="today"><span class="v" id="bToday">0</span><span class="l" id="bTodayL">bites today</span></div>
+    <div class="today"><span class="v" id="bToday">0</span><span class="l" id="bTodayL">Mini Move Cakes today</span></div>
 
-    <div class="section-head"><h2>Pick a bite</h2><button class="linkish" id="newBite">+ New bite</button></div>
+    <div class="section-head"><h2>Pick a cake</h2><button class="linkish" id="newBite">+ New cake</button></div>
+    <p class="mini" style="margin:-4px 0 12px">Little workouts for after meals or whenever you need a break. A piece of cake.</p>
     <div class="bites" id="biteGrid"></div>
 
     <div class="section-head" style="margin-top:40px"><h2>Break reminders</h2></div>
@@ -370,7 +372,7 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
         </label>
       </div>
 
-      <label class="check"><input type="checkbox" id="fBite"> Fit Bite (a short break workout)</label>
+      <label class="check"><input type="checkbox" id="fBite"> Mini Move Cake (a short break workout)</label>
 
       <details class="more" id="pasteBox">
         <summary>Paste from a caption</summary>
@@ -539,15 +541,17 @@ const TEMPLATES = [
 ].map(t => ({ ...clean(t), id: t.id }));
 
 const BITE_TEMPLATES = [
-  { id: "bite-walk",    name: "10-min walk",      type: "Walk / Run", rounds: 1, steps: [{ kind: "walk", secs: 600 }] },
-  { id: "bite-squats",  name: "2-min squats",     type: "Strength circuit", rounds: 2, steps: [{ kind: "work", label: "Squats", secs: 40 }, { kind: "rest", secs: 20 }] },
-  { id: "bite-plank",   name: "1-min plank",      type: "Strength circuit", rounds: 1, steps: [{ kind: "work", label: "Plank", secs: 60 }] },
-  { id: "bite-stairs",  name: "3-min stairs",     type: "Other", rounds: 1, steps: [{ kind: "run", label: "Stairs", secs: 180 }] },
-  { id: "bite-stretch", name: "5-min stretch",    type: "Other", rounds: 1, steps: [{ kind: "cool", label: "Stretch", secs: 300 }] },
-  { id: "bite-pushups", name: "Wall push-ups",    type: "Strength circuit", rounds: 3, steps: [{ kind: "work", label: "Wall push-ups", secs: 30 }, { kind: "rest", secs: 10 }] },
-  { id: "bite-desk",    name: "Desk mobility",    type: "Other", rounds: 1, steps: [{ kind: "work", label: "Neck and shoulders", secs: 60 }, { kind: "work", label: "Hip openers", secs: 60 }, { kind: "work", label: "Back twist", secs: 60 }, { kind: "work", label: "Calf raises", secs: 60 }] },
-  { id: "bite-dance",   name: "5-min dance",      type: "Other", rounds: 1, steps: [{ kind: "sprint", label: "Dance", secs: 300 }] },
-].map(t => ({ ...clean({ ...t, bite: true }), id: t.id }));
+  { id: "bite-plank",   name: "Plancake",           sub: "1-min plank",         type: "Strength circuit", rounds: 1, steps: [{ kind: "work", label: "Plank", secs: 60 }] },
+  { id: "bite-squats",  name: "Squat Cupcake",      sub: "2-min squats",        type: "Strength circuit", rounds: 2, steps: [{ kind: "work", label: "Squats", secs: 40 }, { kind: "rest", secs: 20 }] },
+  { id: "bite-walk",    name: "Pound Cake",         sub: "10-min brisk walk",   type: "Walk / Run", rounds: 1, steps: [{ kind: "walk", label: "Brisk walk", secs: 600 }] },
+  { id: "bite-stairs",  name: "Shortcake Stairs",   sub: "3-min stairs",        type: "Other", rounds: 1, steps: [{ kind: "run", label: "Stairs", secs: 180 }] },
+  { id: "bite-lunges",  name: "Lava Lunge Cake",    sub: "2-min lunges",        type: "Strength circuit", rounds: 2, steps: [{ kind: "work", label: "Lunges", secs: 45 }, { kind: "rest", secs: 15 }] },
+  { id: "bite-pushups", name: "Swiss Roll Push-ups", sub: "2-min wall push-ups", type: "Strength circuit", rounds: 3, steps: [{ kind: "work", label: "Wall push-ups", secs: 30 }, { kind: "rest", secs: 10 }] },
+  { id: "bite-desk",    name: "Layer Cake",         sub: "4-min desk mobility", type: "Other", rounds: 1, steps: [{ kind: "work", label: "Neck and shoulders", secs: 60 }, { kind: "work", label: "Hip openers", secs: 60 }, { kind: "work", label: "Back twist", secs: 60 }, { kind: "work", label: "Calf raises", secs: 60 }] },
+  { id: "bite-stretch", name: "Angel Food Stretch", sub: "5-min stretch",       type: "Other", rounds: 1, steps: [{ kind: "cool", label: "Stretch", secs: 300 }] },
+  { id: "bite-crunch",  name: "Crunch Cake",        sub: "2-min crunches",      type: "Strength circuit", rounds: 2, steps: [{ kind: "work", label: "Crunches", secs: 40 }, { kind: "rest", secs: 20 }] },
+  { id: "bite-dance",   name: "Cha-cha Cheesecake", sub: "5-min dance",         type: "Other", rounds: 1, steps: [{ kind: "sprint", label: "Dance", secs: 300 }] },
+].map(t => ({ ...clean({ ...t, bite: true }), id: t.id, sub: t.sub }));
 
 /* ---------- storage: per-person db, with browser storage fallback ---------- */
 const LS_KEY = "interval-keeper.workouts";
@@ -956,8 +960,8 @@ const BADGES = [
   { id: "early",   g: "AM",   c: "--k-warm",   n: "Early bird",      d: "Start a workout before 7 am",     p: s => [s.early ? 1 : 0, 1] },
   { id: "night",   g: "PM",   c: "--k-cool",   n: "Night owl",       d: "Start a workout after 9 pm",      p: s => [s.night ? 1 : 0, 1] },
   { id: "weekend", g: "S+S",  c: "--k-work",   n: "Weekend warrior", d: "Work out Saturday and Sunday",    p: s => [s.weekend ? 1 : 0, 1] },
-  { id: "sweet",   g: "5×",   c: "--k-sprint", n: "Sweet tooth",     d: "5 Fit Bites in one day",          p: s => [s.bestBiteDay, 5] },
-  { id: "bites25", g: "25b",  c: "--k-warm",   n: "Bite collector",  d: "25 Fit Bites in total",           p: s => [s.bites, 25] },
+  { id: "sweet",   g: "5×",   c: "--k-sprint", n: "Sweet spot",      d: "5 Mini Move Cakes in one day",          p: s => [s.bestBiteDay, 5] },
+  { id: "bites25", g: "25",  c: "--k-warm",   n: "Master baker",    d: "25 Mini Move Cakes in total",           p: s => [s.bites, 25] },
 ];
 function badgeStats() {
   const st = streaks();
@@ -1054,7 +1058,7 @@ function renderProgress() {
 
   const recent = [...H.list].sort((a, b) => b.start - a.start).slice(0, 30);
   $("histList").innerHTML = recent.length ? recent.map(x => `<article class="wcard" data-h="${esc(x.id)}"><div class="row1"><div style="min-width:0">
-      <h3 style="font-size:1.05rem">${esc(x.name)}${x.bite ? '<span class="tag">Bite</span>' : ""}${x.completed ? "" : '<span class="tag">Ended early</span>'}</h3>
+      <h3 style="font-size:1.05rem">${esc(x.name)}${x.bite ? '<span class="tag">Mini Move Cake</span>' : ""}${x.completed ? "" : '<span class="tag">Ended early</span>'}</h3>
       <div class="when">${new Date(x.start).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div></div>
       <div class="side"><span class="time mono">${fmtDur(x.secs)}</span><button class="linkish" data-hdel aria-label="Remove this session">✕</button></div></div></article>`).join("")
     : `<div class="empty">Finish a workout and it shows up here.</div>`;
@@ -1113,6 +1117,7 @@ function renderBites() {
   const mine = store.items.filter(w => w.bite).sort((a, b) => b.updated - a.updated);
   const tile = (w, own) => `<button class="bite" data-bite="${esc(w.id)}" aria-label="Start ${esc(w.name)}">
       <span class="bn">${esc(w.name)}</span>
+      <span class="bs">${esc(w.sub || summary(w))}</span>
       <span class="lane">${laneHTML(expand(w))}</span>
       <span class="bm"><span class="mono">${fmt(total(w))}</span>${own ? `<span class="bite-edit" data-bedit="${esc(w.id)}">Edit</span>` : "<span>▶</span>"}</span>
     </button>`;
@@ -1120,7 +1125,7 @@ function renderBites() {
   const today = startOfDay(new Date()).getTime();
   const t = H.list.filter(x => x.bite && x.start >= today);
   $("bToday").textContent = t.length;
-  $("bTodayL").textContent = `${t.length === 1 ? "bite" : "bites"} today${t.length ? " · " + fmtDur(t.reduce((a, x) => a + x.secs, 0)) : ""}`;
+  $("bTodayL").textContent = `Mini Move ${t.length === 1 ? "Cake" : "Cakes"} today${t.length ? " · " + fmtDur(t.reduce((a, x) => a + x.secs, 0)) : ""}`;
 }
 $("biteGrid").addEventListener("click", e => {
   const ed = e.target.closest("[data-bedit]");
@@ -1161,12 +1166,12 @@ const Rem = {
     const time = t => new Date(t).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
     let msg;
     if (this.pausedUntil > Date.now()) msg = `Paused until <b>${time(this.pausedUntil)}</b>`;
-    else if (this.nextAt) msg = `Next reminder around <b>${time(this.nextAt)}</b>. Finishing a bite restarts the clock.`;
+    else if (this.nextAt) msg = `Next reminder around <b>${time(this.nextAt)}</b>. Finishing a Mini Move Cake restarts the clock.`;
     else msg = "No more reminders today. They start again at your next working hours.";
     $("rStatus").innerHTML = msg;
     $("rPause").textContent = this.pausedUntil > Date.now() ? "Resume" : "Pause 1 hour";
     if (!PUSH_API) this.note("Break reminders are almost ready. They switch on once the reminder server is connected.");
-    else if (!this.supported() && this.isIOS() && !this.standalone()) this.note("On iPhone, reminders only work from the Home Screen app. In Safari tap Share, then Add to Home Screen, and open Fit Bites from there.");
+    else if (!this.supported() && this.isIOS() && !this.standalone()) this.note("On iPhone, reminders only work from the Home Screen app. In Safari tap Share, then Add to Home Screen, and open the app from there.");
     else if (!this.supported()) this.note("This browser can't receive reminders. Try Safari on iPhone (from the Home Screen) or Chrome on a computer.");
     else if (Notification.permission === "denied") this.note("Notifications are blocked for this app. Turn them on in Settings, then Notifications, then Interval Keeper.");
     else this.note("");
