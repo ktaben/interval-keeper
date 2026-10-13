@@ -1,7 +1,7 @@
 {
-  "name": "Interval Keeper",
-  "short_name": "Intervals",
-  "description": "Build and run your own interval workouts.",
+  "name": "Mini Move Cakes",
+  "short_name": "Mini Move Cakes",
+  "description": "Little workouts for after meals or whenever you need a break.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

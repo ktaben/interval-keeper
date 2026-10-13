@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Interval Keeper</title>
-<meta name="description" content="Build and run your own interval workouts.">
+<title>Mini Move Cakes</title>
+<meta name="description" content="Little workouts for after meals or whenever you need a break.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Intervals">
+<meta name="apple-mobile-web-app-title" content="Mini Move Cakes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#eef1f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f131a" media="(prefers-color-scheme: dark)">
@@ -289,7 +289,7 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 
 <div class="wrap" id="app">
   <header class="top">
-    <h1>Interval Keeper</h1>
+    <h1>Mini Move Cakes</h1>
   </header>
   <nav class="tabs" id="tabs" aria-label="Sections">
     <button data-tab="bites" aria-pressed="true">Mini Move Cakes</button>
@@ -880,9 +880,9 @@ document.addEventListener("keydown", e => {
 
 $("exportBtn").addEventListener("click", () => {
   if (!store.items.length && !H.list.length) { toast("Nothing to back up yet"); return; }
-  const blob = new Blob([JSON.stringify({ app: "interval-keeper", version: 3, workouts: store.items, history: H.list, badges: H.badges, plans: Day.plans }, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify({ app: "mini-move-cakes", version: 3, workouts: store.items, history: H.list, badges: H.badges, plans: Day.plans }, null, 2)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-  a.download = `interval-keeper-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `mini-move-cakes-backup-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 });
 $("importFile").addEventListener("change", async e => {
@@ -895,7 +895,7 @@ $("importFile").addEventListener("change", async e => {
     const sessions = H.merge(data.history, data.badges);
     Day.merge(data.plans);
     toast(n || sessions ? `Restored ${n} workout${n === 1 ? "" : "s"} and ${sessions} session${sessions === 1 ? "" : "s"}` : "Nothing to restore in that file");
-  } catch { toast("That file isn't an Interval Keeper backup"); }
+  } catch { toast("That file isn't an Mini Move Cakes backup"); }
 });
 
 /* ---------- tabs ---------- */
@@ -1295,7 +1295,7 @@ const Rem = {
     if (!PUSH_API) this.note("Break reminders are almost ready. They switch on once the reminder server is connected.");
     else if (!this.supported() && this.isIOS() && !this.standalone()) this.note("On iPhone, reminders only work from the Home Screen app. In Safari tap Share, then Add to Home Screen, and open the app from there.");
     else if (!this.supported()) this.note("This browser can't receive reminders. Try Safari on iPhone (from the Home Screen) or Chrome on a computer.");
-    else if (Notification.permission === "denied") this.note("Notifications are blocked for this app. Turn them on in Settings, then Notifications, then Interval Keeper.");
+    else if (Notification.permission === "denied") this.note("Notifications are blocked for this app. Turn them on in Settings, then Notifications, then Mini Move Cakes.");
     else this.note("");
     $("rOn").disabled = !PUSH_API || !this.supported();
   },
