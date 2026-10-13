@@ -285,6 +285,28 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 .pick button:hover { background: var(--surface-2); }
 .pick .pk { font: 600 1.05rem/1.1 var(--display); }
 .pick .pd { font-size: .78rem; color: var(--muted); font-weight: 500; }
+
+/* cleaner Today tab */
+.today { margin-bottom: 28px; }
+.today { align-items: center; flex-wrap: nowrap; }
+.today .tl { display: grid; gap: 2px; min-width: 0; }
+.today #planSum:empty { display: none; }
+.cake-row .bite { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; text-align: left; gap: 6px; }
+.cake-row .bite .bm { margin-top: auto; padding-top: 6px; }
+.wrap > *, section { min-width: 0; }
+.cake-row { min-width: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(140px, 42%); gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory;
+  margin-inline: -16px; padding: 2px 16px 8px; scroll-padding-inline: 16px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.cake-row::-webkit-scrollbar { display: none; }
+.cake-row .bite { scroll-snap-align: start; }
+.swipe-hint { font-size: .75rem; color: var(--muted); }
+details.fold { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+details.fold > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-block: 14px; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary .fs { font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+details.fold > summary .fs::after { content: "›"; font-size: 1.2rem; line-height: 1; transition: transform .15s; }
+details.fold[open] > summary .fs::after { transform: rotate(90deg); }
+details.fold > .rem { padding-bottom: 16px; }
+.show-more { margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -317,20 +339,20 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 
   <!-- MINI MOVE CAKES (internally "bites") -->
   <section id="bites">
-    <div class="today"><span class="v" id="bToday">0</span><span class="l" id="bTodayL">Mini Move Cakes today</span></div>
+    <div class="today"><span class="v" id="bToday">0</span><div class="tl"><span class="l" id="bTodayL">Mini Move Cakes today</span><span class="mini" id="planSum"></span></div></div>
 
     <div class="section-head"><h2>Plan my day</h2>
       <div class="tabs small" id="dayTabs"><button data-d="0" aria-pressed="true">Today</button><button data-d="1" aria-pressed="false">Tomorrow</button></div>
     </div>
-    <div class="plan-sum" id="planSum"></div>
     <div class="plan" id="planList"></div>
     <div class="plan-actions"><button id="planAdd">+ Add to plan</button><button class="linkish" id="planCopy" hidden>Copy yesterday's plan</button></div>
 
-    <div class="section-head" style="margin-top:40px"><h2>Pick a cake</h2><button class="linkish" id="newBite">+ New cake</button></div>
-    <p class="mini" style="margin:-4px 0 12px">Little workouts for after meals or whenever you need a break. A piece of cake.</p>
-    <div class="bites" id="biteGrid"></div>
+    <div class="section-head" style="margin-top:40px"><h2>Pick a cake</h2><span class="swipe-hint">Swipe for more →</span></div>
+    <div class="cake-row" id="biteGrid"></div>
+    <div style="margin-top:6px"><button class="linkish" id="newBite" style="padding-left:0">+ New cake</button></div>
 
-    <div class="section-head" style="margin-top:40px"><h2>Break reminders</h2></div>
+    <details class="fold" id="remBox" style="margin-top:32px">
+      <summary><h2>Break reminders</h2><span class="fs" id="remState">Off</span></summary>
     <div class="rem" id="rem">
       <div class="switch"><label for="rOn" style="font-weight:600">Remind me to take a break</label><input type="checkbox" id="rOn" role="switch"></div>
       <div id="rSettings" class="rem">
@@ -346,6 +368,7 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
       </div>
       <div class="rem-note" id="rNote" hidden></div>
     </div>
+    </details>
   </section>
 
   <!-- PROGRESS -->
@@ -1084,15 +1107,25 @@ function renderProgress() {
   };
 
   $("badgeCount").textContent = `${Object.keys(H.badges).length} of ${BADGES.length}`;
-  $("badgeGrid").innerHTML = [...BADGES].sort((a, b) => (H.badges[b.id] ? 1 : 0) - (H.badges[a.id] ? 1 : 0)).map(b => badgeHTML(b, s)).join("");
+  const sortedBadges = [...BADGES].sort((a, b) => (H.badges[b.id] ? 1 : 0) - (H.badges[a.id] ? 1 : 0));
+  const earnedN = Object.keys(H.badges).length, showN = PV.allBadges ? sortedBadges.length : Math.max(6, earnedN + 3);
+  $("badgeGrid").innerHTML = sortedBadges.slice(0, showN).map(b => badgeHTML(b, s)).join("")
+    + (sortedBadges.length > showN || PV.allBadges ? `<div style="grid-column:1/-1"><button class="linkish show-more" data-more="badges" style="padding-left:0">${PV.allBadges ? "Show fewer" : `Show all ${sortedBadges.length} badges`}</button></div>` : "");
 
-  const recent = [...H.list].sort((a, b) => b.start - a.start).slice(0, 30);
+  const allRecent = [...H.list].sort((a, b) => b.start - a.start);
+  const recent = allRecent.slice(0, PV.allHist ? 60 : 10);
   $("histList").innerHTML = recent.length ? recent.map(x => `<article class="wcard" data-h="${esc(x.id)}"><div class="row1"><div style="min-width:0">
       <h3 style="font-size:1.05rem">${esc(x.name)}${x.bite ? '<span class="tag">Mini Move Cake</span>' : ""}${x.completed ? "" : '<span class="tag">Ended early</span>'}</h3>
       <div class="when">${new Date(x.start).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div></div>
       <div class="side"><span class="time mono">${fmtDur(x.secs)}</span><button class="linkish" data-hdel aria-label="Remove this session">✕</button></div></div></article>`).join("")
     : `<div class="empty">Finish a workout and it shows up here.</div>`;
+  if (allRecent.length > 10) $("histList").insertAdjacentHTML("beforeend", `<div><button class="linkish show-more" data-more="hist" style="padding-left:0">${PV.allHist ? "Show fewer" : "Show more"}</button></div>`);
 }
+$("progress").addEventListener("click", e => {
+  const b = e.target.closest("[data-more]"); if (!b) return;
+  if (b.dataset.more === "badges") PV.allBadges = !PV.allBadges; else PV.allHist = !PV.allHist;
+  renderProgress();
+});
 $("periodTabs").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (!b) return; PV.period = b.dataset.p; PV.offset = 0; renderProgress(); });
 $("pvPrev").addEventListener("click", () => { PV.offset--; renderProgress(); });
 $("pvNext").addEventListener("click", () => { if (PV.offset < 0) { PV.offset++; renderProgress(); } });
@@ -1232,10 +1265,10 @@ const Day = {
           ${x.done ? '<span class="tick" aria-label="Done">✓</span>' : w ? `<button class="primary play" data-pstart aria-label="Start ${esc(name)}">▶</button>` : ""}
           <button class="linkish" data-pdel aria-label="Remove from plan">✕</button>
         </div></div>`;
-    }).join("") : `<div class="empty">${this.off === 0 ? "Nothing planned for today yet." : "Nothing planned for tomorrow yet."} Add Mini Move Cakes or your own workouts at the times you want them.</div>`;
+    }).join("") : `<div class="empty">${this.off === 0 ? "Nothing planned for today yet." : "Nothing planned for tomorrow yet."}</div>`;
     const done = items.filter(x => x.done);
     const mins = list => list.reduce((a, x) => a + (findWorkout(x.ref) ? total(findWorkout(x.ref)) : 0), 0);
-    $("planSum").textContent = items.length ? `${done.length} of ${items.length} done · ${fmtDur(mins(done))} of ${fmtDur(mins(items))}` : "";
+    $("planSum").textContent = items.length && this.off === 0 ? `${done.length} of ${items.length} planned done` : "";
     const yesterday = this.plans[this.key(this.off - 1)] || [];
     $("planCopy").hidden = items.length > 0 || !yesterday.length;
     $("planCopy").textContent = this.off === 0 ? "Copy yesterday's plan" : "Copy today's plan";
@@ -1310,8 +1343,13 @@ const Rem = {
     if (!res.ok) throw new Error(data.error || "Request failed");
     return data;
   },
+  summary() {
+    const hm = t => { const [h, m] = t.split(":").map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); };
+    $("remState").textContent = !PUSH_API ? "Coming soon" : this.st.on ? `Every ${this.st.every} min · ${hm(this.st.start)}–${hm(this.st.end)}` : "Off";
+  },
   apply(d) { if (d && "nextAt" in d) { this.nextAt = d.nextAt; this.pausedUntil = d.pausedUntil || 0; } this.render(); },
   render() {
+    this.summary();
     $("rOn").checked = this.st.on; $("rSettings").hidden = !this.st.on;
     $("rEvery").value = String(this.st.every); $("rStart").value = this.st.start; $("rEnd").value = this.st.end;
     $("rDays").innerHTML = DAY_LETTERS.map((l, i) => `<button type="button" data-day="${i}" aria-pressed="${this.st.days.includes(i)}" aria-label="${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][i]}">${l}</button>`).join("");
