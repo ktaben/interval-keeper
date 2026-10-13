@@ -264,6 +264,25 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 .rem-status b { color: var(--fg); }
 .rem-note { font-size: .82rem; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
 .check { display: flex; gap: 8px; align-items: center; font-size: .88rem; font-weight: 500; }
+
+/* day planner */
+.plan { display: grid; border-top: 1px solid var(--line); }
+.prow { display: grid; grid-template-columns: 4.6rem 1fr auto; gap: 12px; align-items: center; padding-block: 12px; border-bottom: 1px solid var(--line); }
+.prow .pt { white-space: nowrap; font: 500 .8rem/1 var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.prow .pn { font: 600 1.1rem/1.15 var(--display); letter-spacing: .01em; min-width: 0; overflow-wrap: anywhere; }
+.prow .ps { font-size: .78rem; color: var(--muted); margin-top: 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.prow .pa { display: flex; align-items: center; gap: 2px; }
+.prow.done .pn { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+.prow.next .pt { color: var(--accent); font-weight: 700; }
+.chip-next { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
+.tick { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--k-walk); font-weight: 700; }
+.plan-sum { font-size: .82rem; color: var(--muted); margin: -2px 0 10px; font-variant-numeric: tabular-nums; }
+.plan-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.pick { display: grid; max-height: 46vh; overflow-y: auto; border-top: 1px solid var(--line); }
+.pick button { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; padding: 12px 2px; }
+.pick button:hover { background: var(--surface-2); }
+.pick .pk { font: 600 1.05rem/1.1 var(--display); }
+.pick .pd { font-size: .78rem; color: var(--muted); font-weight: 500; }
 </style>
 </head>
 <body>
@@ -298,7 +317,14 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
   <section id="bites">
     <div class="today"><span class="v" id="bToday">0</span><span class="l" id="bTodayL">Mini Move Cakes today</span></div>
 
-    <div class="section-head"><h2>Pick a cake</h2><button class="linkish" id="newBite">+ New cake</button></div>
+    <div class="section-head"><h2>Plan my day</h2>
+      <div class="tabs small" id="dayTabs"><button data-d="0" aria-pressed="true">Today</button><button data-d="1" aria-pressed="false">Tomorrow</button></div>
+    </div>
+    <div class="plan-sum" id="planSum"></div>
+    <div class="plan" id="planList"></div>
+    <div class="plan-actions"><button id="planAdd">+ Add to plan</button><button class="linkish" id="planCopy" hidden>Copy yesterday's plan</button></div>
+
+    <div class="section-head" style="margin-top:40px"><h2>Pick a cake</h2><button class="linkish" id="newBite">+ New cake</button></div>
     <p class="mini" style="margin:-4px 0 12px">Little workouts for after meals or whenever you need a break. A piece of cake.</p>
     <div class="bites" id="biteGrid"></div>
 
@@ -449,6 +475,13 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
       <button id="pNextBtn">Skip ⏭</button>
     </div>
   </div>
+</div>
+
+<div class="sheet" id="planSheet" hidden>
+  <div class="section-head" style="margin:0"><h2 id="psTitle">Add to today</h2><button class="ghost" id="psClose">Done</button></div>
+  <div class="rem-row"><label for="psTime">At</label><input type="time" id="psTime" value="10:00"><span class="mini">Tap a workout to add it. Add as many as you like.</span></div>
+  <div class="tabs small" id="psSrc"><button data-src="bites" aria-pressed="true">Mini Move Cakes</button><button data-src="mine" aria-pressed="false">My Workouts</button></div>
+  <div class="pick" id="psList"></div>
 </div>
 
 <div class="sheet" id="musicSheet" hidden>
@@ -742,8 +775,8 @@ async function wakeOn() { try { if (navigator.wakeLock && !P.wake) { P.wake = aw
 function wakeOff() { try { P.wake?.release(); } catch {} P.wake = null; }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && P.running) wakeOn(); });
 
-function startPlayer(w) {
-  P.w = w; P.plan = expand(w); P.idx = 0; P.running = false; P.done = false; P.left = P.plan[0]?.secs || 0; P.lastBeep = -1;
+function startPlayer(w, dayRef = null) {
+  P.dayRef = dayRef; P.w = w; P.plan = expand(w); P.idx = 0; P.running = false; P.done = false; P.left = P.plan[0]?.secs || 0; P.lastBeep = -1;
   P.active = 0; P.runFrom = 0; P.startedAt = 0; P.logged = false; $("pFin").hidden = true; $("pNext").hidden = false;
   $("pName").textContent = w.name; $("player").hidden = false; document.body.style.overflow = "hidden";
   $("stage").classList.remove("finished");
@@ -755,6 +788,7 @@ function stopPlayer() {
   P.running = false; clearInterval(P.iv); cancelAnimationFrame(P.raf); wakeOff();
   try { speechSynthesis.cancel(); } catch {}
   $("player").hidden = true; $("musicSheet").hidden = true; document.body.style.overflow = "";
+  if (tab === "bites") { renderBites(); Day.render(); }
   try { mAudio.pause(); } catch {}
 }
 function announce(i) {
@@ -846,7 +880,7 @@ document.addEventListener("keydown", e => {
 
 $("exportBtn").addEventListener("click", () => {
   if (!store.items.length && !H.list.length) { toast("Nothing to back up yet"); return; }
-  const blob = new Blob([JSON.stringify({ app: "interval-keeper", version: 2, workouts: store.items, history: H.list, badges: H.badges }, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify({ app: "interval-keeper", version: 3, workouts: store.items, history: H.list, badges: H.badges, plans: Day.plans }, null, 2)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
   a.download = `interval-keeper-backup-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
@@ -859,6 +893,7 @@ $("importFile").addEventListener("change", async e => {
     let n = 0;
     for (const w of list) { if (!Array.isArray(w?.steps)) continue; await store.save({ ...clean(w), id: w.id || uid(), updated: w.updated }); n++; }
     const sessions = H.merge(data.history, data.badges);
+    Day.merge(data.plans);
     toast(n || sessions ? `Restored ${n} workout${n === 1 ? "" : "s"} and ${sessions} session${sessions === 1 ? "" : "s"}` : "Nothing to restore in that file");
   } catch { toast("That file isn't an Interval Keeper backup"); }
 });
@@ -870,7 +905,7 @@ function showTab(t) {
   for (const b of $("tabs").children) b.setAttribute("aria-pressed", b.dataset.tab === t);
   $("library").hidden = t !== "library"; $("progress").hidden = t !== "progress"; $("bites").hidden = t !== "bites";
   if (t === "progress") renderProgress();
-  if (t === "bites") { renderBites(); Rem.render(); Rem.refresh(); }
+  if (t === "bites") { renderBites(); Day.render(); Rem.render(); Rem.refresh(); }
   try { localStorage.setItem("interval-keeper.tab", t); } catch {}
 }
 $("tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (b) showTab(b.dataset.tab); });
@@ -900,11 +935,12 @@ function logSession(completed) {
   const secs = Math.round(P.active / 1000);
   H.list.push({ id: uid(), name: P.w.name, type: P.w.type, start: P.startedAt || Date.now() - P.active, secs, completed, bite: !!P.w.bite });
   P.logged = true;
+  Day.complete(P.w.id, P.dayRef);
   const fresh = awardBadges(); H.write();
   if (!completed) toast(`Saved ${fmtDur(secs)} to your progress`);
   return fresh;
 }
-const fmtDur = s => { const m = Math.round(s / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m` : `${m}m`; };
+const fmtDur = s => { if (s > 0 && s < 60) return `${Math.round(s)}s`; const m = Math.round(s / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m` : `${m}m`; };
 
 /* ---------- dates ---------- */
 const dayKey = t => { const d = new Date(t); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
@@ -1118,6 +1154,110 @@ $("biteGrid").addEventListener("click", e => {
 });
 $("newBite").addEventListener("click", () => openEditor({ name: "", type: "Other", warmup: 0, cooldown: 0, rounds: 1, notes: "", bite: true,
   steps: [{ kind: "work", label: "", secs: 40 }, { kind: "rest", label: "", secs: 20 }] }));
+
+/* ---------- day planner ---------- */
+const PLAN_KEY = "interval-keeper.plans";
+const isoDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const dayOffset = n => { const d = startOfDay(new Date()); d.setDate(d.getDate() + n); return d; };
+const findWorkout = id => store.items.find(x => x.id === id) || BITE_TEMPLATES.find(x => x.id === id);
+const Day = {
+  plans: {}, off: 0, src: "bites",
+  load() { try { this.plans = JSON.parse(localStorage.getItem(PLAN_KEY) || "{}") || {}; } catch { this.plans = {}; } this.prune(); },
+  save() { try { localStorage.setItem(PLAN_KEY, JSON.stringify(this.plans)); } catch {} },
+  prune() { // keep about two months of plans
+    const cutoff = isoDay(dayOffset(-60));
+    for (const k of Object.keys(this.plans)) if (k < cutoff || !Array.isArray(this.plans[k])) delete this.plans[k];
+  },
+  key(off = this.off) { return isoDay(dayOffset(off)); },
+  items(off = this.off) { return (this.plans[this.key(off)] || []).slice().sort((a, b) => a.time.localeCompare(b.time)); },
+  merge(plans) {
+    if (!plans || typeof plans !== "object") return;
+    for (const [k, list] of Object.entries(plans)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !Array.isArray(list)) continue;
+      const cur = this.plans[k] || [];
+      for (const x of list) if (x?.id && x.ref && /^\d{2}:\d{2}$/.test(x.time) && !cur.some(y => y.id === x.id)) cur.push({ id: String(x.id), ref: String(x.ref), time: x.time, done: +x.done || 0 });
+      this.plans[k] = cur;
+    }
+    this.prune(); this.save(); if (tab === "bites") this.render();
+  },
+  add(ref, time) {
+    const k = this.key(); (this.plans[k] = this.plans[k] || []).push({ id: uid(), ref, time, done: 0 }); this.save(); this.render();
+  },
+  remove(id) { const k = this.key(); this.plans[k] = (this.plans[k] || []).filter(x => x.id !== id); this.save(); this.render(); },
+  // Mark the planned item done: the one started from the plan, else today's earliest open item for this workout.
+  complete(ref, dayRef) {
+    const k = dayRef?.day || isoDay(new Date()); const list = this.plans[k]; if (!list) return;
+    const item = (dayRef && list.find(x => x.id === dayRef.id && !x.done)) || list.filter(x => x.ref === ref && !x.done).sort((a, b) => a.time.localeCompare(b.time))[0];
+    if (item) { item.done = Date.now(); this.save(); }
+  },
+  nextTime() {
+    const items = this.items(); const step = Math.max(30, Rem.st.every || 60);
+    let m;
+    if (items.length) { const [h, mm] = items[items.length - 1].time.split(":").map(Number); m = h * 60 + mm + step; }
+    else if (this.off === 0) { const now = new Date(); m = Math.ceil((now.getHours() * 60 + now.getMinutes() + 5) / 30) * 30; }
+    else m = 9 * 60;
+    m = Math.min(m, 23 * 60 + 30);
+    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  },
+  render() {
+    for (const b of $("dayTabs").children) b.setAttribute("aria-pressed", +b.dataset.d === this.off);
+    const items = this.items();
+    const nowHM = new Date().toTimeString().slice(0, 5);
+    const nextId = this.off === 0 ? (items.find(x => !x.done && x.time >= nowHM) || items.find(x => !x.done))?.id : null;
+    const label = t => { const [h, m] = t.split(":").map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); };
+    $("planList").innerHTML = items.length ? items.map(x => {
+      const w = findWorkout(x.ref);
+      const name = w ? w.name : "Deleted workout";
+      const meta = w ? esc(w.sub || fmtShort(total(w))) : "This workout was removed";
+      return `<div class="prow ${x.done ? "done" : ""} ${x.id === nextId ? "next" : ""}" data-pid="${esc(x.id)}">
+        <span class="pt">${esc(label(x.time))}</span>
+        <div style="min-width:0"><div class="pn">${esc(name)}</div>
+          <div class="ps">${x.id === nextId ? '<span class="chip-next">Up next</span>' : ""}<span>${meta}</span>${x.done ? `<span>Done ${new Date(x.done).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>` : ""}</div></div>
+        <div class="pa">
+          ${x.done ? '<span class="tick" aria-label="Done">✓</span>' : w ? `<button class="primary play" data-pstart aria-label="Start ${esc(name)}">▶</button>` : ""}
+          <button class="linkish" data-pdel aria-label="Remove from plan">✕</button>
+        </div></div>`;
+    }).join("") : `<div class="empty">${this.off === 0 ? "Nothing planned for today yet." : "Nothing planned for tomorrow yet."} Add Mini Move Cakes or your own workouts at the times you want them.</div>`;
+    const done = items.filter(x => x.done);
+    const mins = list => list.reduce((a, x) => a + (findWorkout(x.ref) ? total(findWorkout(x.ref)) : 0), 0);
+    $("planSum").textContent = items.length ? `${done.length} of ${items.length} done · ${fmtDur(mins(done))} of ${fmtDur(mins(items))}` : "";
+    const yesterday = this.plans[this.key(this.off - 1)] || [];
+    $("planCopy").hidden = items.length > 0 || !yesterday.length;
+    $("planCopy").textContent = this.off === 0 ? "Copy yesterday's plan" : "Copy today's plan";
+  },
+  openSheet() {
+    $("psTitle").textContent = this.off === 0 ? "Add to today" : "Add to tomorrow";
+    $("psTime").value = this.nextTime(); this.renderPick(); $("planSheet").hidden = false;
+  },
+  renderPick() {
+    for (const b of $("psSrc").children) b.setAttribute("aria-pressed", b.dataset.src === this.src);
+    const list = this.src === "bites" ? [...store.items.filter(w => w.bite), ...BITE_TEMPLATES] : store.items.filter(w => !w.bite);
+    $("psList").innerHTML = list.length ? list.map(w => `<button data-pick="${esc(w.id)}"><span><span class="pk">${esc(w.name)}</span><br><span class="pd">${esc(w.sub || summary(w))}</span></span><span class="pd mono">${fmt(total(w))}</span></button>`).join("")
+      : `<div class="empty">No workouts yet. Build one in the My Workouts tab.</div>`;
+  },
+};
+$("dayTabs").addEventListener("click", e => { const b = e.target.closest("[data-d]"); if (b) { Day.off = +b.dataset.d; Day.render(); } });
+$("planAdd").addEventListener("click", () => Day.openSheet());
+$("psClose").addEventListener("click", () => { $("planSheet").hidden = true; });
+$("psSrc").addEventListener("click", e => { const b = e.target.closest("[data-src]"); if (b) { Day.src = b.dataset.src; Day.renderPick(); } });
+$("psList").addEventListener("click", e => {
+  const b = e.target.closest("[data-pick]"); if (!b) return;
+  const w = findWorkout(b.dataset.pick); const time = $("psTime").value || Day.nextTime();
+  Day.add(b.dataset.pick, time); $("psTime").value = Day.nextTime();
+  toast(`Added ${w.name} at ${time}`);
+});
+$("planCopy").addEventListener("click", () => {
+  const from = Day.plans[Day.key(Day.off - 1)] || [];
+  Day.plans[Day.key()] = from.map(x => ({ id: uid(), ref: x.ref, time: x.time, done: 0 })); Day.save(); Day.render();
+  toast(`Copied ${from.length} item${from.length === 1 ? "" : "s"}`);
+});
+$("planList").addEventListener("click", e => {
+  const row = e.target.closest("[data-pid]"); if (!row) return;
+  const item = Day.items().find(x => x.id === row.dataset.pid); if (!item) return;
+  if (e.target.closest("[data-pstart]")) { const w = findWorkout(item.ref); if (w) startPlayer(w, { day: Day.key(), id: item.id }); }
+  else if (e.target.closest("[data-pdel]")) Day.remove(item.id);
+});
+Day.load();
 
 /* ---------- break reminders (push) ---------- */
 const PUSH_API = "";

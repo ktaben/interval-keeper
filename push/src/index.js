@@ -3,7 +3,7 @@
 import { buildPushHTTPRequest } from "@pushforge/builder";
 
 const ORIGINS = ["https://ktaben.github.io", "http://localhost:8765"];
-const CONTACT = "https://ktaben.github.io/interval-keeper/";
+const CONTACT = "https://ktaben.github.io/minimovecakes/";
 const BITES = [
   "a Plancake (1-min plank)", "a Squat Cupcake (2-min squats)", "a Pound Cake (10-min walk)", "Shortcake Stairs (3 min)",
   "a Lava Lunge Cake (2-min lunges)", "a Layer Cake (4-min desk mobility)", "a Crunch Cake (2-min crunches)", "an Angel Food Stretch (5 min)", "a Cha-cha Cheesecake (5-min dance)",

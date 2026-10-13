@@ -1,5 +1,7 @@
-# Interval Keeper
+# Mini Move Cakes
 
-Build and run your own interval workouts (walk/run, HIIT, treadmill). Works offline and installs to the iPhone Home Screen.
+Little workouts for after meals or whenever you need a break, plus your own interval workouts and a day planner. Works offline and installs to the iPhone Home Screen.
 
-Open the site in Safari, tap Share, then Add to Home Screen.
+Open https://ktaben.github.io/minimovecakes/ in Safari, tap Share, then Add to Home Screen.
+
+The `push/` folder holds the Cloudflare Worker that sends break reminders.
