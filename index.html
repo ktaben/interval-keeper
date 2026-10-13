@@ -275,8 +275,6 @@ details.more > div { display: grid; gap: 12px; margin-top: 12px; }
 .prow.done .pn { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
 .prow.next .pt { color: var(--accent); font-weight: 700; }
 .prow .pt.any { font-family: var(--body); font-size: .78rem; font-weight: 600; }
-.daychips { flex-wrap: wrap; align-items: center; }
-.prow .ps .rep { color: var(--accent); font-weight: 600; }
 .plan-group { font: 600 .7rem/1 var(--body); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); padding: 16px 0 4px; }
 .chip-next { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
 .tick { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--k-walk); font-weight: 700; }
@@ -507,20 +505,18 @@ details.fold > .rem { padding-bottom: 16px; }
 <div class="sheet" id="planSheet" hidden>
   <div class="section-head" style="margin:0"><h2 id="psTitle">Add to today</h2><button class="ghost" id="psClose">Done</button></div>
   <div class="rem-row"><label for="psTime">Remind me at</label><input type="time" id="psTime" value="10:00">
-    <label class="check" for="psAny"><input type="checkbox" id="psAny"> Anytime</label></div>
-  <div class="rem-row"><span>Repeat</span><div class="daychips" id="psDays" aria-label="Repeat on"></div></div>
-  <div class="mini" id="psHint">Leave Repeat empty for just this day. Tap a workout to add it.</div>
+    <label class="check" for="psAny"><input type="checkbox" id="psAny"> Anytime today</label></div>
+  <div class="mini" id="psHint">Tap a workout to add it. Add as many as you like.</div>
   <div class="tabs small" id="psSrc"><button data-src="bites" aria-pressed="true">Mini Move Cakes</button><button data-src="mine" aria-pressed="false">My Workouts</button></div>
   <div class="pick" id="psList"></div>
 </div>
 
 <div class="sheet" id="timeSheet" hidden>
-  <div class="section-head" style="margin:0"><h2 id="tsTitle">Edit</h2><button class="ghost" id="tsCancel">Cancel</button></div>
+  <div class="section-head" style="margin:0"><h2 id="tsTitle">Change time</h2><button class="ghost" id="tsCancel">Cancel</button></div>
   <div class="rem-row"><label for="tsTime">Remind me at</label><input type="time" id="tsTime">
-    <label class="check" for="tsAny"><input type="checkbox" id="tsAny"> Anytime</label></div>
-  <div class="rem-row"><span>Repeat</span><div class="daychips" id="tsDays" aria-label="Repeat on"></div></div>
+    <label class="check" for="tsAny"><input type="checkbox" id="tsAny"> Anytime today</label></div>
   <div class="mini">Planned times will send you a reminder once break reminders are switched on.</div>
-  <div class="bar-actions" style="justify-content:space-between"><button class="danger linkish" id="tsRemove" style="padding-left:0">Remove from plan</button><button class="primary" id="tsSave">Save</button></div>
+  <div class="bar-actions" style="justify-content:flex-start"><button class="primary" id="tsSave">Save</button></div>
 </div>
 
 <div class="sheet" id="musicSheet" hidden>
@@ -919,7 +915,7 @@ document.addEventListener("keydown", e => {
 
 $("exportBtn").addEventListener("click", () => {
   if (!store.items.length && !H.list.length) { toast("Nothing to back up yet"); return; }
-  const blob = new Blob([JSON.stringify({ app: "mini-move-cakes", version: 3, workouts: store.items, history: H.list, badges: H.badges, plans: Day.plans, repeats: Day.repeats }, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify({ app: "mini-move-cakes", version: 3, workouts: store.items, history: H.list, badges: H.badges, plans: Day.plans }, null, 2)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
   a.download = `mini-move-cakes-backup-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
@@ -932,7 +928,7 @@ $("importFile").addEventListener("change", async e => {
     let n = 0;
     for (const w of list) { if (!Array.isArray(w?.steps)) continue; await store.save({ ...clean(w), id: w.id || uid(), updated: w.updated }); n++; }
     const sessions = H.merge(data.history, data.badges);
-    Day.merge(data.plans, data.repeats);
+    Day.merge(data.plans);
     toast(n || sessions ? `Restored ${n} workout${n === 1 ? "" : "s"} and ${sessions} session${sessions === 1 ? "" : "s"}` : "Nothing to restore in that file");
   } catch { toast("That file isn't an Mini Move Cakes backup"); }
 });
@@ -1205,96 +1201,39 @@ $("newBite").addEventListener("click", () => openEditor({ name: "", type: "Other
   steps: [{ kind: "work", label: "", secs: 40 }, { kind: "rest", label: "", secs: 20 }] }));
 
 /* ---------- day planner ---------- */
-const PLAN_KEY = "interval-keeper.plans", REPEAT_KEY = "interval-keeper.repeats";
+const PLAN_KEY = "interval-keeper.plans";
 const isoDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const dayOffset = n => { const d = startOfDay(new Date()); d.setDate(d.getDate() + n); return d; };
 const findWorkout = id => store.items.find(x => x.id === id) || BITE_TEMPLATES.find(x => x.id === id);
-const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-function daysLabel(days) {
-  const d = [...days].sort((a, b) => a - b).join();
-  if (d === "0,1,2,3,4,5,6") return "Every day";
-  if (d === "1,2,3,4,5") return "Weekdays";
-  if (d === "0,6") return "Weekends";
-  return [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map(i => DAY_SHORT[i]).join(", ");
-}
-function dayChips(el, days) {
-  el.innerHTML = ["M", "T", "W", "T", "F", "S", "S"].map((l, i) => { const d = (i + 1) % 7;
-    return `<button type="button" data-day="${d}" aria-pressed="${days.includes(d)}" aria-label="${DAY_SHORT[d]}">${l}</button>`; }).join("")
-    + `<button type="button" class="linkish" data-preset="1,2,3,4,5" style="width:auto;padding:0 6px">Weekdays</button><button type="button" class="linkish" data-preset="0,1,2,3,4,5,6" style="width:auto;padding:0 6px">Every day</button>`;
-}
-function readChips(el) { return [...el.querySelectorAll("[data-day][aria-pressed=true]")].map(b => +b.dataset.day); }
-function wireChips(el) {
-  el.addEventListener("click", e => {
-    const b = e.target.closest("[data-day]"), p = e.target.closest("[data-preset]");
-    if (b) b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true");
-    if (p) { const want = p.dataset.preset.split(",").map(Number); const same = readChips(el).sort().join() === [...want].sort().join(); dayChips(el, same ? [] : want); }
-  });
-}
-
 const Day = {
-  plans: {}, repeats: [], off: 0, src: "bites", editing: null,
-  load() {
-    try { this.plans = JSON.parse(localStorage.getItem(PLAN_KEY) || "{}") || {}; } catch { this.plans = {}; }
-    try { this.repeats = JSON.parse(localStorage.getItem(REPEAT_KEY) || "[]") || []; } catch { this.repeats = []; }
-    this.prune();
-  },
-  save() { try { localStorage.setItem(PLAN_KEY, JSON.stringify(this.plans)); localStorage.setItem(REPEAT_KEY, JSON.stringify(this.repeats)); } catch {} },
+  plans: {}, off: 0, src: "bites",
+  load() { try { this.plans = JSON.parse(localStorage.getItem(PLAN_KEY) || "{}") || {}; } catch { this.plans = {}; } this.prune(); },
+  save() { try { localStorage.setItem(PLAN_KEY, JSON.stringify(this.plans)); } catch {} },
   prune() { // keep about two months of plans
     const cutoff = isoDay(dayOffset(-60));
     for (const k of Object.keys(this.plans)) if (k < cutoff || !Array.isArray(this.plans[k])) delete this.plans[k];
   },
   key(off = this.off) { return isoDay(dayOffset(off)); },
-  // Put each repeating item onto a day the first time that day is looked at, so it can be ticked off or skipped on its own.
-  fill(off) {
-    const k = this.key(off), wd = dayOffset(off).getDay(); const list = this.plans[k] || [];
-    let added = false;
-    for (const rp of this.repeats) if (rp.days.includes(wd) && k >= rp.from && !list.some(x => x.rule === rp.id)) {
-      list.push({ id: uid(), ref: rp.ref, time: rp.time, done: 0, rule: rp.id }); added = true;
-    }
-    if (added) { this.plans[k] = list; this.save(); }
-  },
   // Timed items in time order, then "anytime" items (time "") in the order they were added.
-  items(off = this.off) {
-    this.fill(off);
-    return (this.plans[this.key(off)] || []).filter(x => !x.skipped).sort((a, b) => (!a.time) - (!b.time) || a.time.localeCompare(b.time));
-  },
-  rule(item) { return item.rule ? this.repeats.find(r => r.id === item.rule) : null; },
-  merge(plans, repeats) {
-    if (Array.isArray(repeats)) for (const r of repeats) if (r?.id && r.ref && Array.isArray(r.days) && !this.repeats.some(x => x.id === r.id))
-      this.repeats.push({ id: String(r.id), ref: String(r.ref), time: /^\d{2}:\d{2}$/.test(r.time) ? r.time : "", days: r.days.map(Number).filter(d => d >= 0 && d <= 6), from: String(r.from || isoDay(new Date())) });
-    if (plans && typeof plans === "object") for (const [k, list] of Object.entries(plans)) {
+  items(off = this.off) { return (this.plans[this.key(off)] || []).filter(x => !x.skipped).sort((a, b) => (!a.time) - (!b.time) || a.time.localeCompare(b.time)); },
+  merge(plans) {
+    if (!plans || typeof plans !== "object") return;
+    for (const [k, list] of Object.entries(plans)) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !Array.isArray(list)) continue;
       const cur = this.plans[k] || [];
-      for (const x of list) if (x?.id && x.ref && /^(\d{2}:\d{2})?$/.test(x.time || "") && !cur.some(y => y.id === x.id))
-        cur.push({ id: String(x.id), ref: String(x.ref), time: x.time || "", done: +x.done || 0, ...(x.rule ? { rule: String(x.rule) } : {}), ...(x.skipped ? { skipped: true } : {}) });
+      for (const x of list) if (x?.id && x.ref && /^(\d{2}:\d{2})?$/.test(x.time || "") && !cur.some(y => y.id === x.id)) cur.push({ id: String(x.id), ref: String(x.ref), time: x.time || "", done: +x.done || 0 });
       this.plans[k] = cur;
     }
     this.prune(); this.save(); if (tab === "bites") this.render();
   },
-  add(ref, time, days) {
-    const k = this.key(); const list = (this.plans[k] = this.plans[k] || []);
-    if (days.length) {
-      const rp = { id: uid(), ref, time, days, from: k }; this.repeats.push(rp);
-      if (days.includes(dayOffset(this.off).getDay())) list.push({ id: uid(), ref, time, done: 0, rule: rp.id });
-    } else list.push({ id: uid(), ref, time, done: 0 });
-    this.save(); this.render();
+  add(ref, time) {
+    const k = this.key(); (this.plans[k] = this.plans[k] || []).push({ id: uid(), ref, time, done: 0 }); this.save(); this.render();
   },
-  // ✕ on a repeating item skips just this day; on a one-off it removes it.
-  remove(item) {
-    const k = this.key();
-    if (item.rule) item.skipped = true; else this.plans[k] = (this.plans[k] || []).filter(x => x.id !== item.id);
-    this.save(); this.render();
-    toast(item.rule ? "Skipped for this day. It still repeats." : "Removed from plan");
-  },
-  stopRepeat(ruleId) {
-    this.repeats = this.repeats.filter(r => r.id !== ruleId);
-    const today = isoDay(new Date());
-    for (const [k, list] of Object.entries(this.plans)) this.plans[k] = k > today ? list.filter(x => x.rule !== ruleId || x.done) : list.map(x => x.rule === ruleId ? (delete x.rule, x) : x);
-  },
+  remove(id) { const k = this.key(); this.plans[k] = (this.plans[k] || []).filter(x => x.id !== id); this.save(); this.render(); },
   // Mark the planned item done: the one started from the plan, else today's earliest open item for this workout.
   complete(ref, dayRef) {
-    const k = dayRef?.day || isoDay(new Date()); if (!dayRef) this.fill(0); const list = this.plans[k]; if (!list) return;
-    const item = (dayRef && list.find(x => x.id === dayRef.id && !x.done)) || list.filter(x => x.ref === ref && !x.done && !x.skipped).sort((a, b) => (!a.time) - (!b.time) || a.time.localeCompare(b.time))[0];
+    const k = dayRef?.day || isoDay(new Date()); const list = this.plans[k]; if (!list) return;
+    const item = (dayRef && list.find(x => x.id === dayRef.id && !x.done)) || list.filter(x => x.ref === ref && !x.done).sort((a, b) => (!a.time) - (!b.time) || a.time.localeCompare(b.time))[0];
     if (item) { item.done = Date.now(); this.save(); }
   },
   nextTime() {
@@ -1315,28 +1254,28 @@ const Day = {
     const label = t => { const [h, m] = t.split(":").map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); };
     const firstAny = items.find(x => !x.time)?.id;
     $("planList").innerHTML = items.length ? items.map(x => {
-      const w = findWorkout(x.ref); const rp = this.rule(x);
+      const w = findWorkout(x.ref);
       const name = w ? w.name : "Deleted workout";
       const meta = w ? esc(w.sub || fmtShort(total(w))) : "This workout was removed";
-      return `${x.id === firstAny && timed.length ? '<div class="plan-group">Anytime</div>' : ""}<div class="prow ${x.done ? "done" : ""} ${x.id === nextId ? "next" : ""}" data-pid="${esc(x.id)}">
-        <button class="pt ${x.time ? "" : "any"}" data-ptime aria-label="Edit time and repeat">${x.time ? esc(label(x.time)) : "Anytime"}</button>
+      return `${x.id === firstAny && timed.length ? '<div class="plan-group">Anytime today</div>' : ""}<div class="prow ${x.done ? "done" : ""} ${x.id === nextId ? "next" : ""}" data-pid="${esc(x.id)}">
+        <button class="pt ${x.time ? "" : "any"}" data-ptime aria-label="Change time">${x.time ? esc(label(x.time)) : "Anytime"}</button>
         <div style="min-width:0"><div class="pn">${esc(name)}</div>
-          <div class="ps">${x.id === nextId ? '<span class="chip-next">Up next</span>' : ""}<span>${meta}</span>${rp ? `<span class="rep">↻ ${esc(daysLabel(rp.days))}</span>` : ""}${x.done ? `<span>Done ${new Date(x.done).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>` : ""}</div></div>
+          <div class="ps">${x.id === nextId ? '<span class="chip-next">Up next</span>' : ""}<span>${meta}</span>${x.done ? `<span>Done ${new Date(x.done).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>` : ""}</div></div>
         <div class="pa">
           ${x.done ? '<span class="tick" aria-label="Done">✓</span>' : w ? `<button class="primary play" data-pstart aria-label="Start ${esc(name)}">▶</button>` : ""}
-          <button class="linkish" data-pdel aria-label="${x.rule ? "Skip this day" : "Remove from plan"}">✕</button>
+          <button class="linkish" data-pdel aria-label="Remove from plan">✕</button>
         </div></div>`;
     }).join("") : `<div class="empty">${this.off === 0 ? "Nothing planned for today yet." : "Nothing planned for tomorrow yet."}</div>`;
     const done = items.filter(x => x.done);
+    const mins = list => list.reduce((a, x) => a + (findWorkout(x.ref) ? total(findWorkout(x.ref)) : 0), 0);
     $("planSum").textContent = items.length && this.off === 0 ? `${done.length} of ${items.length} planned done` : "";
-    const prev = (this.plans[this.key(this.off - 1)] || []).filter(x => !x.rule && !x.skipped);
-    $("planCopy").hidden = items.length > 0 || !prev.length;
+    const yesterday = this.plans[this.key(this.off - 1)] || [];
+    $("planCopy").hidden = items.length > 0 || !yesterday.length;
     $("planCopy").textContent = this.off === 0 ? "Copy yesterday's plan" : "Copy today's plan";
   },
   openSheet() {
     $("psTitle").textContent = this.off === 0 ? "Add to today" : "Add to tomorrow";
-    $("psTime").value = this.nextTime(); $("psAny").checked = false; $("psTime").disabled = false;
-    dayChips($("psDays"), []); this.renderPick(); $("planSheet").hidden = false;
+    $("psTime").value = this.nextTime(); $("psAny").checked = false; $("psTime").disabled = false; this.renderPick(); $("planSheet").hidden = false;
   },
   renderPick() {
     for (const b of $("psSrc").children) b.setAttribute("aria-pressed", b.dataset.src === this.src);
@@ -1344,32 +1283,7 @@ const Day = {
     $("psList").innerHTML = list.length ? list.map(w => `<button data-pick="${esc(w.id)}"><span><span class="pk">${esc(w.name)}</span><br><span class="pd">${esc(w.sub || summary(w))}</span></span><span class="pd mono">${fmt(total(w))}</span></button>`).join("")
       : `<div class="empty">No workouts yet. Build one in the My Workouts tab.</div>`;
   },
-  editTime(item) {
-    this.editing = item.id; const w = findWorkout(item.ref); const rp = this.rule(item);
-    $("tsTitle").textContent = w ? w.name : "Edit";
-    $("tsAny").checked = !item.time; $("tsTime").value = item.time || this.nextTime(); $("tsTime").disabled = !item.time;
-    dayChips($("tsDays"), rp ? rp.days : []);
-    $("tsRemove").textContent = rp ? "Stop repeating and remove" : "Remove from plan";
-    $("timeSheet").hidden = false;
-  },
-  saveEdit() {
-    const k = this.key(); const list = this.plans[k] || []; const item = list.find(x => x.id === this.editing); if (!item) return;
-    const time = $("tsAny").checked ? "" : ($("tsTime").value || item.time); const days = readChips($("tsDays"));
-    const rp = this.rule(item);
-    item.time = time;
-    if (days.length && rp) { // update the repeat and every upcoming copy of it
-      rp.time = time; rp.days = days;
-      const today = isoDay(new Date());
-      for (const [d, l] of Object.entries(this.plans)) if (d > today) this.plans[d] = l.filter(x => x.rule !== rp.id || x.done);
-      for (const x of Object.values(this.plans).flat()) if (x.rule === rp.id && !x.done) x.time = time;
-    } else if (days.length) { // turn a one-off into a repeat
-      const nr = { id: uid(), ref: item.ref, time, days, from: k }; this.repeats.push(nr); item.rule = nr.id;
-    } else if (rp) this.stopRepeat(rp.id);
-    this.save(); this.render();
-    toast(days.length ? `Repeats ${daysLabel(days).toLowerCase()}${time ? " at " + time : ""}` : time ? `Reminder at ${time}` : "Set to anytime");
-  },
 };
-wireChips($("psDays")); wireChips($("tsDays"));
 $("dayTabs").addEventListener("click", e => { const b = e.target.closest("[data-d]"); if (b) { Day.off = +b.dataset.d; Day.render(); } });
 $("planAdd").addEventListener("click", () => Day.openSheet());
 $("psClose").addEventListener("click", () => { $("planSheet").hidden = true; });
@@ -1377,29 +1291,33 @@ $("psSrc").addEventListener("click", e => { const b = e.target.closest("[data-sr
 $("psList").addEventListener("click", e => {
   const b = e.target.closest("[data-pick]"); if (!b) return;
   const w = findWorkout(b.dataset.pick); const any = $("psAny").checked; const time = any ? "" : ($("psTime").value || Day.nextTime());
-  const days = readChips($("psDays"));
-  Day.add(b.dataset.pick, time, days); if (!any) $("psTime").value = Day.nextTime();
-  toast(`Added ${w.name}${time ? ", reminder at " + time : " for anytime"}${days.length ? ", repeats " + daysLabel(days).toLowerCase() : ""}`);
+  Day.add(b.dataset.pick, time); if (!any) $("psTime").value = Day.nextTime();
+  toast(any ? `Added ${w.name} for anytime today` : `Added ${w.name}, reminder at ${time}`);
 });
 $("planCopy").addEventListener("click", () => {
-  const from = (Day.plans[Day.key(Day.off - 1)] || []).filter(x => !x.rule && !x.skipped);
-  const k = Day.key(); Day.plans[k] = [...(Day.plans[k] || []), ...from.map(x => ({ id: uid(), ref: x.ref, time: x.time, done: 0 }))]; Day.save(); Day.render();
+  const from = Day.plans[Day.key(Day.off - 1)] || [];
+  Day.plans[Day.key()] = from.map(x => ({ id: uid(), ref: x.ref, time: x.time, done: 0 })); Day.save(); Day.render();
   toast(`Copied ${from.length} item${from.length === 1 ? "" : "s"}`);
 });
 $("planList").addEventListener("click", e => {
   const row = e.target.closest("[data-pid]"); if (!row) return;
-  const item = (Day.plans[Day.key()] || []).find(x => x.id === row.dataset.pid); if (!item) return;
+  const item = Day.items().find(x => x.id === row.dataset.pid); if (!item) return;
   if (e.target.closest("[data-ptime]")) { Day.editTime(item); return; }
   if (e.target.closest("[data-pstart]")) { const w = findWorkout(item.ref); if (w) startPlayer(w, { day: Day.key(), id: item.id }); }
-  else if (e.target.closest("[data-pdel]")) Day.remove(item);
+  else if (e.target.closest("[data-pdel]")) Day.remove(item.id);
 });
+Day.editTime = function (item) {
+  this.editing = item.id; const w = findWorkout(item.ref);
+  $("tsTitle").textContent = w ? w.name : "Change time";
+  $("tsAny").checked = !item.time; $("tsTime").value = item.time || this.nextTime(); $("tsTime").disabled = !item.time;
+  $("timeSheet").hidden = false;
+};
 $("psAny").addEventListener("change", e => { $("psTime").disabled = e.target.checked; });
 $("tsAny").addEventListener("change", e => { $("tsTime").disabled = e.target.checked; });
 $("tsCancel").addEventListener("click", () => { $("timeSheet").hidden = true; });
-$("tsSave").addEventListener("click", () => { Day.saveEdit(); $("timeSheet").hidden = true; });
-$("tsRemove").addEventListener("click", () => {
-  const k = Day.key(); const item = (Day.plans[k] || []).find(x => x.id === Day.editing);
-  if (item) { if (item.rule) Day.stopRepeat(item.rule); Day.plans[k] = (Day.plans[k] || []).filter(x => x.id !== item.id); Day.save(); Day.render(); toast("Removed from plan"); }
+$("tsSave").addEventListener("click", () => {
+  const list = Day.plans[Day.key()] || []; const item = list.find(x => x.id === Day.editing);
+  if (item) { item.time = $("tsAny").checked ? "" : ($("tsTime").value || item.time); Day.save(); Day.render(); toast(item.time ? `Reminder moved to ${item.time}` : "Set to anytime today"); }
   $("timeSheet").hidden = true;
 });
 Day.load();
